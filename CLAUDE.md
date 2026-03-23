@@ -77,10 +77,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `ui/theme/`：Compose 主题、颜色与动态色彩配置。
 - `gradle/libs.versions.toml`：版本控制中心。
 
-------
+## 核心领域模型 (DDD & Scalability)
 
-### 💡 下一步建议
+为了防止功能增加导致的系统臃肿，架构遵循 **领域驱动设计 (DDD)** 模式，将业务逻辑拆分为四大核心领域：
 
-现在你的项目已经有了完整的“大脑（AGENT.md）”和“地图（Docs）”。
+- **Account (账户)**：管理现金、银行卡、信用卡等资产状态及余额。
+- **Transaction (交易)**：核心记账引擎，处理收入、支出、转账等原子操作。
+- **Budget (预算)**：负责限额设定、超支预警及周期性财务计划。
+- **Analytics (分析)**：负责数据聚合、报表生成及 AI 财务趋势预测。
 
-**你想让我根据 `AGENT.md` 里的规范，帮你生成第一个 Plan 文档 `plans/001-setup-stt-and-retrofit.md` 吗？我们将先实现语音转文字并发送给后端。**
+### 扩展性策略：
+
+- **插件化/功能开关 (Feature Toggles)**：统计图表、外汇转换、摄影器材折旧等模块需与核心交易引擎解耦，支持通过配置动态开启。
+- **多端抽象**：Repository 层与 Network 层采用平台无关化设计，为未来迁移至 Kotlin Multiplatform (KMP) 预留接口。
+
+## MCP (Model Context Protocol) 适配层
+
+为了实现 AI Agent 生态的互操作性，服务端需暴露 MCP 兼容接口。
+
+### 传输规范
+
+- **协议**: 基于 HTTP 的 SSE (Server-Sent Events)。
+- **Endpoint**: `/api/mcp`。
+
+### 暴露的工具 (Tools)
+
+- `create_transaction(amount, category, note)`: 允许 AI 直接执行记账动作。
+- `get_balance_report(period)`: 返回结构化的财务摘要，供 AI 进行二次分析。
+
+### 安全策略
+
+- **MCP-Token**: 仅允许携带特定私密 Token 的 MCP Host（如 Claude Desktop）进行连接。
+- 
+
+## 🧪 测试与质量保障 (Testing Requirements)
+
+### 强制性规则
+- **全覆盖原则**：所有新开发的功能（Android 端或 Hono 端）必须包含对应的测试用例。禁止提交没有测试支撑的业务逻辑改动。
+- **同步更新**：修改现有逻辑时，必须同步修复受影响的旧测试用例。
+
+### 测试分类规范
+- **Android 端**:
+    - **Unit Tests**: 放置在 `app/src/test/`。重点测试 ViewModel 的 State 转换和 Repository 的逻辑。
+    - **Compose UI Tests**: 放置在 `app/src/androidTest/`。使用 Compose Test Rule 验证核心交互（如记账按钮点击）。
+- **Hono 服务端**:
+    - **Integration Tests**: 模拟 HTTP 请求，验证 Zod Schema 校验和 D1 数据库的 CRUD 操作。
+    - **AI Logic Tests**: 针对 Prompt 解析结果进行断言，确保金额、分类等字段提取准确。
+
+### Agent 自动化流程 (Workflow)
+- **验证指令**: 在宣布任务完成前，Agent 必须主动运行 `./gradlew test` (Android) 或 `npm test` (Hono) 并汇报结果。
+- **红色报警**: 如果测试未通过，Agent 必须优先修复测试，禁止继续推进新功能。
+
