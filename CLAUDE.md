@@ -2,104 +2,85 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 项目概述
+------
 
-MoneyJar 是一个使用 Kotlin 和 Jetpack Compose 构建的 Android 应用程序。
+# 🤖 MoneyJar Project Agent Guide (V1.0)
 
-## 常用命令
+## 🌟 项目概述
 
-### 构建
-```bash
-./gradlew build
-```
+**MoneyJar** 是一款使用 Kotlin 和 Jetpack Compose 构建的智能记账 Android 应用。
 
-### 清理构建
-```bash
-./gradlew clean
-```
+- **核心理念**：瘦客户端（Android）+ 边缘 AI（Hono.js）。
+- **交互愿景**：通过语音 (ML Kit) 与图像识别，实现“开口即记”的无感财务管理。
 
-### 安装 Debug APK 到连接的设备
-```bash
-./gradlew installDebug
-```
+------
 
-### 运行单元测试
-```bash
-./gradlew test
-```
+## 📚 知识库索引 (重要)
 
-### 运行特定单元测试类
-```bash
-./gradlew test --tests "com.example.moneyjar.ExampleUnitTest"
-```
+在执行任何任务前，请先阅读以下文档：
 
-### 运行特定测试方法
-```bash
-./gradlew test --tests "com.example.moneyjar.ExampleUnitTest.addition_isCorrect"
-```
+1. **需求场景**：`./docs/requirements/01_MVP_PRD.md` (包含语音、离线、周报三大场景)。
+2. **技术架构**：`./docs/architecture/SYSTEM_TAD.md` (定义了前后端协议与 AI SDK 逻辑)。
+3. **执行计划**：`./plans/` (所有复杂改动必须先在此建立步骤文档)。
 
-### 运行 Instrumented 测试（需要连接 Android 设备或模拟器）
-```bash
-./gradlew connectedAndroidTest
-```
+------
 
-### 生成 Release 构建
-```bash
-./gradlew assembleRelease
-```
+## 🛠️ 技术栈与约束
 
-## 项目架构
+### 📱 Android 客户端
 
-### 技术栈
-- **语言**: Kotlin
-- **UI 框架**: Jetpack Compose with Material3
-- **构建工具**: Gradle with Kotlin DSL
-- **最低 SDK**: API 24
-- **目标 SDK**: API 36
+- **语言与 UI**：Kotlin + Jetpack Compose (Material3)。
+- **系统配置**：Min SDK 24, **Target SDK 36**。启用 `enableEdgeToEdge()`。
+- **网络层**：必须使用 **Retrofit 2 + OkHttp 4**。
+- **存储层**：Room Database（作为云端 D1 的本地镜像）。
+- **语音方案**：**ML Kit Speech Recognition (v16.1.3)**。
+  - 识别器需指定 `zh-CN`。
+  - 必须处理 `RECORD_AUDIO` 运行时权限。
+- **依赖管理**：严格使用 `gradle/libs.versions.toml`，禁止在 `build.gradle.kts` 中硬编码版本号。
 
-### 代码结构
-- `app/src/main/java/com/example/moneyjar/` - 主要应用代码
-  - `MainActivity.kt` - 应用入口 Activity
-  - `ui/theme/` - Compose 主题配置（颜色、排版、主题）
+### 🌐 服务端 (Serverless)
 
-### 依赖管理
-项目使用 `gradle/libs.versions.toml` 进行版本目录管理。所有依赖版本和插件版本都应在此文件中定义。
+- **框架**：Hono.js。
+- **AI 编排**：Vercel AI SDK (Google Gemini 1.5)。
+- **数据库**：Cloudflare D1 + Drizzle ORM。
 
-### Compose 架构
-- `MoneyJarTheme` - 应用主题，支持动态色彩（Android 12+）
-- Material3 是 UI 组件库
-- 使用 `enableEdgeToEdge()` 启用边缘到边缘布局
+------
 
-## 语音转文字（STT）方案
+## 💻 常用工程命令
 
-项目使用 **ML Kit Speech Recognition** 实现语音识别功能。
+当需要进行构建、测试或安装时，请使用以下命令：
 
-### ML Kit Speech Recognition 依赖
+| **任务**            | **命令**                               |
+| ------------------- | -------------------------------------- |
+| **构建项目**        | `./gradlew build`                      |
+| **安装 Debug APK**  | `./gradlew installDebug`               |
+| **运行单元测试**    | `./gradlew test`                       |
+| **运行特定测试**    | `./gradlew test --tests "类名.方法名"` |
+| **真机/模拟器测试** | `./gradlew connectedAndroidTest`       |
+| **生成 Release 包** | `./gradlew assembleRelease`            |
+| **清理工程**        | `./gradlew clean`                      |
 
-在 `gradle/libs.versions.toml` 中添加：
+------
 
-```toml
-[versions]
-# ... 现有版本 ...
-mlkit-speech = "16.1.3"
+## 🔄 AI 协作规范
 
-[libraries]
-# ... 现有库 ...
-mlkit-speech = { group = "com.google.mlkit", name = "speech", version.ref = "mlkit-speech" }
-```
+1. **Plan First**：在编写代码前，请先口述你的逻辑或在 `/plans` 创建文档，尤其是涉及 Retrofit 接口与后端 Hono 联调时。
+2. **瘦逻辑原则**：Android 端只负责采集（语音转文字）和展示。复杂的语义解析（金额提取、分类）必须交给服务端的 Vercel AI SDK 处理。
+3. **类型安全**：确保 Android 的 Data Class 与服务端的 JSON 返回结构严格一致。
+4. **错误处理**：必须考虑 AI 解析延迟（建议 OkHttp 超时设为 30s）及无网络下的本地 Room 缓存逻辑。
 
-在 `app/build.gradle.kts` 中添加依赖：
+------
 
-```kotlin
-dependencies {
-    // ... 现有依赖 ...
-    implementation(libs.mlkit.speech)
-}
-```
+## 📂 核心目录索引
 
-### 使用要点
+- `app/src/main/java/.../`：业务代码。
+- `ui/theme/`：Compose 主题、颜色与动态色彩配置。
+- `gradle/libs.versions.toml`：版本控制中心。
 
-- ML Kit Speech Recognition 支持多种语言，需要在识别器中指定语言（如 "zh-CN" 表示简体中文）
-- 使用 `SpeechRecognizer` API 进行语音识别
-- 需要在运行时请求录音权限（`RECORD_AUDIO`）
-- 识别结果通过回调返回，支持连续识别和部分结果
+------
+
+### 💡 下一步建议
+
+现在你的项目已经有了完整的“大脑（AGENT.md）”和“地图（Docs）”。
+
+**你想让我根据 `AGENT.md` 里的规范，帮你生成第一个 Plan 文档 `plans/001-setup-stt-and-retrofit.md` 吗？我们将先实现语音转文字并发送给后端。**
