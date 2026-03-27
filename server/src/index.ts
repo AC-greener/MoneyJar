@@ -2,13 +2,9 @@ import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
 import { posts } from './db/schema';
 
-type Bindings = {
-  AI: Ai;
-  DB: D1Database;
-};
 
 // 2. 将类型传给 Hono 实例
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app
   .get("/test", async (c) => {
