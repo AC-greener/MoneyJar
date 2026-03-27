@@ -62,17 +62,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ------
 
-## 核心目录索引
+## 分层架构规范 (Agent-First)
+
+架构采用**严格单向分层**，每层只能依赖下方的层，禁止跨层或反向依赖。
+
+```
+types → db → repositories → services → routes
+```
+
+| 层次 | 目录 | 职责 | 允许依赖 |
+| --- | --- | --- | --- |
+| **Types** | `src/types/` | Zod Schema + TypeScript 类型定义 | 无（最底层） |
+| **DB** | `src/db/` | Drizzle ORM 表结构定义 | types |
+| **Repositories** | `src/repositories/` | D1 数据库 CRUD，无业务逻辑 | db |
+| **Services** | `src/services/` | 业务逻辑、AI 调用编排 | repositories, types |
+| **Middlewares** | `src/middlewares/` | Hono 中间件（auth、错误处理、日志） | types |
+| **Routes** | `src/routes/` | Hono 路由、入参校验、响应格式化 | services, types |
+| **Entry** | `src/index.ts` | 路由注册、中间件挂载、Bindings 声明 | routes, middlewares |
+
+**横切关注点**（auth、错误处理、日志）统一放在 `src/middlewares/`，通过 `index.ts` 全局挂载，不得散落在 routes 或 services 中。
+
+### 黄金原则（机械性规则）
+
+- 禁止在 `routes/` 中直接调用 `repositories/`，必须经过 `services/`。
+- 禁止在 `repositories/` 中写业务判断逻辑，只做数据读写。
+- 禁止在 `index.ts` 中写任何业务代码，只做注册和挂载。
+- AI 输出必须经过 `types/` 中定义的 Zod Schema 解析，禁止直接使用原始字符串。
+- 所有 D1 查询必须经过 Drizzle ORM，禁止拼接原始 SQL 字符串。
+
+------
+
+## 核心目录结构
 
 ```
 src/
-├── index.ts          # 应用入口，路由注册
-└── db/
-    └── schema.ts     # Drizzle ORM Schema 定义（所有表结构改动入口）
-drizzle/              # 自动生成的迁移文件，禁止手动修改
-plans/                # 复杂任务的执行计划文档
-docs/                 # 需求与架构文档
+├── index.ts              # 应用入口，仅做路由注册和 Bindings 声明
+├── types/                # Zod Schema + 类型（最底层，无任何依赖）
+├── db/                   # Drizzle ORM 表结构（只依赖 types）
+│   └── schema.ts
+├── repositories/         # 数据访问层（只依赖 db）
+├── services/             # 业务逻辑层（只依赖 repositories + types）
+├── middlewares/          # Hono 中间件（auth、错误处理、日志，只依赖 types）
+└── routes/               # Hono 路由层（只依赖 services + types）
+test/
+├── integration/          # HTTP 级别集成测试（测试 routes 端点）
+├── unit/                 # 单元测试（测试 services / repositories）
+└── fixtures/             # 共享 mock 数据
+drizzle/                  # 自动生成的迁移文件，禁止手动修改
+plans/                    # 复杂任务执行计划
+docs/                     # 需求与架构文档
 ```
+
+> 各目录当前为空（含 `.gitkeep`），按需新增文件时须遵循分层架构规范。
 
 ------
 
@@ -102,17 +143,58 @@ docs/                 # 需求与架构文档
 
 ------
 
+## 规划中的功能 (Future Roadmap)
+
+以下功能**尚未实现**，但在设计新功能时需避免与其产生架构冲突。
+
+### Cloudflare Vectorize — 语义增强层
+
+当以下功能开发时，引入 **Cloudflare Vectorize** 向量数据库，与 D1 并存：
+
+**1. 自然语言查账**
+
+用户可用口语提问，如"上个月我在哪花了最多钱"、"帮我看看我的奶茶支出"。
+
+- 实现方案：RAG 模式——将历史 Transaction 记录向量化存入 Vectorize，查询时检索相关记录后拼入 Prompt，由 Workers AI 生成自然语言回答。
+- Binding 名称（预留）：`VECTORIZE`
+
+**2. 个性化财务建议**
+
+基于用户历史消费习惯，主动推送财务洞察，如"你本月餐饮支出比上月高 40%"。
+
+- 实现方案：对消费模式做语义聚类，结合 Workers AI 生成个性化建议文本。
+
+**注意**：在此之前，所有查账需求通过 D1 SQL 聚合查询实现，禁止提前引入 Vectorize 增加复杂度。
+
+------
+
 ## 测试与质量保障
+
+### 测试框架
+
+**Vitest + `@cloudflare/vitest-pool-workers`**
+
+测试运行在真实的 Workers 运行时（非 Node.js），D1、AI 等 binding 行为与生产环境一致。
+
+### 目录规范
+
+- `test/integration/` — HTTP 级别集成测试，使用 Hono `testClient` 模拟请求，验证路由响应和 Zod 校验。
+- `test/unit/` — 单元测试，重点覆盖 services 业务逻辑和 AI 解析结果断言。
+- `test/fixtures/` — 共享 mock 数据，禁止在各测试文件中重复定义相同的测试数据。
+
+### 命名规范
+
+测试文件与源文件对应，后缀改为 `.test.ts`：
+
+```
+src/services/transaction.service.ts  →  test/unit/transaction.service.test.ts
+src/routes/transaction.route.ts      →  test/integration/transaction.test.ts
+```
 
 ### 强制规则
 
 - 所有新功能必须包含对应测试，禁止提交无测试覆盖的业务逻辑。
 - 修改现有逻辑时，必须同步修复受影响的旧测试。
-
-### 测试分类
-
-- **Integration Tests**：模拟 HTTP 请求，验证 Zod Schema 校验和 D1 的 CRUD 操作。
-- **AI Logic Tests**：对 Prompt 解析结果进行断言，确保金额、分类字段提取准确。
 
 ### Agent 自动化流程
 
