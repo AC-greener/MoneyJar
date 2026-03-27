@@ -21,7 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 1. **需求场景**：`./docs/requirements/01_MVP_PRD.md`（包含语音、离线、周报三大场景）。
 2. **技术架构**：`./docs/architecture/SYSTEM_TAD.md`（定义了前后端协议与 AI 逻辑）。
-3. **执行计划**：`./plans/`（所有复杂改动必须先在此建立步骤文档）。
+3. **开发路线图**：`./docs/ROADMAP.md`（四阶段开发顺序与每阶段验收标准）。
+4. **数据库操作**：`./docs/DATABASE.md`（Schema、迁移命令、开发流程说明）。
+5. **执行计划**：`./plans/`（所有复杂改动必须先在此建立步骤文档）。
 
 ------
 
@@ -42,14 +44,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 常用工程命令
 
-| **任务**         | **命令**                    |
-| ---------------- | --------------------------- |
-| **本地开发**     | `pnpm dev`                  |
-| **生产部署**     | `pnpm deploy`               |
-| **生成迁移文件** | `pnpm db:generate`          |
-| **应用迁移**     | `pnpm db:up`                |
-| **刷新 CF 类型** | `pnpm cf-typegen`           |
-| **运行测试**     | `pnpm test`                 |
+| **任务**             | **命令**                    |
+| -------------------- | --------------------------- |
+| **本地开发**         | `pnpm dev`                  |
+| **生产部署**         | `pnpm deploy`               |
+| **生成迁移文件**     | `pnpm db:generate`          |
+| **应用迁移**         | `pnpm db:migrate`           |
+| **直接推送（开发用）** | `pnpm db:push`            |
+| **刷新 CF 类型**     | `pnpm cf-typegen`           |
+| **运行测试**         | `pnpm test`                 |
 
 ------
 
@@ -119,9 +122,8 @@ docs/                     # 需求与架构文档
 
 ## 核心领域模型 (DDD)
 
-架构遵循领域驱动设计，将业务逻辑拆分为四大核心领域：
+架构遵循领域驱动设计，将业务逻辑拆分为2大核心领域：
 
-- **Account（账户）**：现金、银行卡、信用卡等资产状态及余额管理。
 - **Transaction（交易）**：核心记账引擎，处理收入、支出、转账原子操作。
 - **Budget（预算）**：限额设定、超支预警及周期性财务计划。
 - **Analytics（分析）**：数据聚合、报表生成及 AI 财务趋势预测。
