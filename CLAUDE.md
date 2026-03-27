@@ -40,7 +40,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 🌐 服务端 (Serverless)
 
-- **框架**：Hono.js。
+- **框架**：Hono.js：https://hono.dev/llms.txt。
 - **AI 编排**：Vercel AI SDK (Google Gemini 1.5)。
 - **数据库**：Cloudflare D1 + Drizzle ORM。
 
