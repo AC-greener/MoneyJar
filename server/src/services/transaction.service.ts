@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { TransactionRepository } from '../repositories/transaction.repository';
-import type { CreateTransactionInput, TransactionResponse } from '../types/transaction';
+import type { CreateTransactionInput } from '../types/transaction';
 
 function getWeekBounds() {
   const now = new Date();
@@ -57,7 +57,7 @@ export class TransactionService {
     return this.repo.delete(id);
   }
 
-  private calculateTotals(transactions: TransactionResponse[]) {
+  private calculateTotals(transactions: { type: string; amount: number }[]) {
     const income = transactions
       .filter((t) => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);

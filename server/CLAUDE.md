@@ -77,9 +77,10 @@ if (!parsed.success) {
 ## AI 协作规范
 
 1. **Plan First**：涉及新 API 端点或数据库 Schema 变更时，必须先在 `/plans` 创建步骤文档再编码。
-2. **AI 输出约束**：调用 Workers AI 时，必须在 Prompt 中明确要求返回 JSON，并用 Zod 解析结果，不得直接使用 AI 原始字符串输出。
-3. **类型安全**：服务端 JSON 返回结构必须与 Android 端 Kotlin Data Class 严格一致，变更时需同步通知。
-4. **错误处理**：AI 推理可能超时或返回格式错误，必须有 fallback 处理逻辑，向客户端返回明确的错误码。
+2. **计划文件要求**：每次制定计划后，必须将完整计划写入 `plans/XXX-{feature-name}.md`，文件名使用序号和功能名称。不得只在脑海中规划，必须形成文档。
+3. **AI 输出约束**：调用 Workers AI 时，必须在 Prompt 中明确要求返回 JSON，并用 Zod 解析结果，不得直接使用 AI 原始字符串输出。
+4. **类型安全**：服务端 JSON 返回结构必须与 Android 端 Kotlin Data Class 严格一致，变更时需同步通知。
+5. **错误处理**：AI 推理可能超时或返回格式错误，必须有 fallback 处理逻辑，向客户端返回明确的错误码。
 
 ------
 
@@ -110,6 +111,7 @@ types → db → repositories → services → routes
 - 禁止在 `index.ts` 中写任何业务代码，只做注册和挂载。
 - AI 输出必须经过 `types/` 中定义的 Zod Schema 解析，禁止直接使用原始字符串。
 - 所有 D1 查询必须经过 Drizzle ORM，禁止拼接原始 SQL 字符串。
+- **所有代码注释必须使用中文**，不得使用英文注释。
 
 ------
 

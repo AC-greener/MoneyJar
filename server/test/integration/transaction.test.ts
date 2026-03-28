@@ -22,11 +22,28 @@ const CREATE_TRANSACTIONS_TABLE = `CREATE TABLE "transactions" (
   "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
 )`;
 
+const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE "request_logs" (
+  "id" text PRIMARY KEY,
+  "request_path" text NOT NULL,
+  "request_method" text NOT NULL,
+  "status_code" integer NOT NULL,
+  "duration" integer NOT NULL,
+  "request_body" text,
+  "response_body" text,
+  "error_message" text,
+  "client_ip" text,
+  "user_agent" text,
+  "timestamp" integer NOT NULL,
+  "ai_parsed" integer,
+  "ai_model" text,
+  "ai_processing_time" integer
+)`;
+
 // Apply migrations before tests
 async function setupD1() {
   const migration: D1Migration = {
     name: '0000_tough_storm',
-    queries: [CREATE_TRANSACTIONS_TABLE],
+    queries: [CREATE_TRANSACTIONS_TABLE, CREATE_REQUEST_LOGS_TABLE],
   };
   await applyD1Migrations(env.DB, [migration]);
 }

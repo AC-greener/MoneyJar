@@ -20,6 +20,33 @@
 
 ---
 
+## Phase 1.5：日志基础设施
+
+**目标**：记录 API 调用过程中产生的信息和错误，方便排查问题。
+
+### 任务
+
+- [x] 新增 `request_logs` 表（`src/db/schema.ts`）
+- [x] 实现日志中间件 `src/middlewares/logger.ts`
+- [x] 实现错误处理中间件 `src/middlewares/error-handler.ts`
+- [x] 实现 `src/repositories/log.repository.ts`
+- [x] 实现 `src/services/log.service.ts`
+- [x] 配置 Cron Trigger 每天凌晨执行日志清理（`wrangler.jsonc`）
+- [x] 实现 `src/services/retention.service.ts`
+- [x] 所有端点响应包含 `requestId`，便于问题追溯
+
+### 验收标准
+
+- POST/PUT/DELETE 请求自动记录到 `request_logs` 表
+- HTTP 状态码 >= 400 的响应自动记录
+- GET 请求不记录（简单查询不包含 AI 运算）
+- `/health` 和 `/favicon` 跳过日志记录
+- 响应头包含 `X-Request-Id`
+- 错误响应包含 `requestId`
+- 日志保留 30 天后自动清理
+
+---
+
 ## Phase 2：AI 语义解析（核心功能）
 
 **目标**：打通"语音文本 → 结构化记账"的核心主链路。

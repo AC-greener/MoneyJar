@@ -17,7 +17,7 @@ transactionRoute
 
     const parsed = CreateTransactionSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: parsed.error.issues }, 400);
+      return c.json({ error: parsed.error.issues, requestId: c.get('requestId') }, 400);
     }
 
     const result = await service.create(parsed.data);
@@ -47,7 +47,7 @@ transactionRoute
 
     const result = await service.getById(id);
     if (!result) {
-      return c.json({ error: 'Transaction not found' }, 404);
+      return c.json({ error: 'Transaction not found', requestId: c.get('requestId') }, 404);
     }
 
     return c.json(TransactionResponseSchema.parse(result));
@@ -59,7 +59,7 @@ transactionRoute
 
     const result = await service.delete(id);
     if (!result) {
-      return c.json({ error: 'Transaction not found' }, 404);
+      return c.json({ error: 'Transaction not found', requestId: c.get('requestId') }, 404);
     }
 
     return c.json({ message: 'Transaction deleted' });

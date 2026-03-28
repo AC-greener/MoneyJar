@@ -2,7 +2,8 @@
   "name": "server",
   "type": "module",
   "scripts": {
-    "dev": "http_proxy=http://127.0.0.1:7897 wrangler dev",
+    "dev2": "http_proxy=http://127.0.0.1:7897 wrangler dev",
+    "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -23,6 +24,7 @@
     "@types/node": "^25.5.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
     "vitest": "^4.1.0",
     "wrangler": "^4.76.0"
   }
