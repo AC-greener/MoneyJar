@@ -1,18 +1,11 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
-export const posts = sqliteTable('posts', {
-  // id is set on insert, incrementing
-  id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
-
-  // title of the blog post
-  title: text('title', { length: 256 }).notNull(),
-
-  // content of the blog post
-  content: text('content', { length: 256 }).notNull(),
-
-  // timestamp is set on insert
-  timestamp: text('timestamp')
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+export const transactions = sqliteTable('transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  type: text('type', { length: 20 }).notNull(), // 'income' | 'expense'
+  amount: real('amount').notNull(),
+  category: text('category', { length: 50 }).notNull(),
+  note: text('note', { length: 256 }),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

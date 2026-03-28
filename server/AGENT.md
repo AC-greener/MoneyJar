@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENT.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AGENT when working with code in this repository.
 
 ------
 
@@ -39,24 +39,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **数据库**：Cloudflare D1（SQLite）+ Drizzle ORM，通过 `c.env.DB` binding 访问。
 - **Schema 管理**：使用 `drizzle-kit` 生成迁移文件，禁止手动修改 `drizzle/` 目录下的文件。
 - **输入校验**：所有 API 入参必须使用 Zod 校验，不得信任原始请求数据。
-
-### Zod 使用规范
-
-Zod 错误对象的正确属性：
-```typescript
-const parsed = MySchema.safeParse(data);
-if (!parsed.success) {
-  // ✅ 正确：使用 .issues 获取错误详情
-  return c.json({ error: parsed.error.issues }, 400);
-  // ❌ 错误：ZodError 没有 .errors 属性
-}
-```
-
-常用 Zod API：
-- `schema.parse(data)` - 解析失败会抛异常
-- `schema.safeParse(data)` - 返回 `{ success: true, data }` 或 `{ success: false, error }`
-- `error.issues` - 获取所有验证错误（是数组）
-- `error.message` - 人类可读的单个错误消息
 
 ------
 
