@@ -107,6 +107,90 @@ pnpm db:migrate
 
 ---
 
+## 本地数据库操作
+
+> **注意**：`drizzle.config.ts` 配置的是远程 D1（`d1-http` 驱动），`pnpm db:push` 会推送到远程。本地 D1 需要用 wrangler 命令直接操作。
+
+### 查看本地数据库的表
+
+```bash
+pnpm exec wrangler d1 execute moneyjar --local --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+```
+
+### 查看表结构
+
+```bash
+pnpm exec wrangler d1 execute moneyjar --local --command "PRAGMA table_info(transactions);"
+pnpm exec wrangler d1 execute moneyjar --local --command "PRAGMA table_info(request_logs);"
+```
+
+### 创建本地表的 SQL
+
+如果本地数据库没有表，需要手动创建。以下是当前 schema 对应的建表 SQL：
+
+**transactions 表**
+
+```bash
+pnpm exec wrangler d1 execute moneyjar --local --command "
+CREATE TABLE \`transactions\` (
+  \`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  \`type\` text(20) NOT NULL,
+  \`amount\` real NOT NULL,
+  \`category\` text(50) NOT NULL,
+  \`note\` text(256),
+  \`created_at\` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+);"
+```
+
+**request_logs 表**
+
+```bash
+pnpm exec wrangler d1 execute moneyjar --local --command "
+CREATE TABLE \`request_logs\` (
+  \`id\` text PRIMARY KEY NOT NULL,
+  \`request_path\` text NOT NULL,
+  \`request_method\` text NOT NULL,
+  \`status_code\` integer NOT NULL,
+  \`duration\` integer NOT NULL,
+  \`request_body\` text,
+  \`response_body\` text,
+  \`error_message\` text,
+  \`client_ip\` text,
+  \`user_agent\` text,
+  \`timestamp\` integer NOT NULL,
+  \`ai_parsed\` integer,
+  \`ai_model\` text,
+  \`ai_processing_time\` integer
+);"
+```
+
+**创建索引**
+
+```bash
+pnpm exec wrangler d1 execute moneyjar --local --command "
+CREATE INDEX \`idx_request_id\` ON \`request_logs\` (\`id\`);
+CREATE INDEX \`idx_timestamp\` ON \`request_logs\` (\`timestamp\`);
+CREATE INDEX \`idx_status_code\` ON \`request_logs\` (\`status_code\`);
+CREATE INDEX \`idx_request_path\` ON \`request_logs\` (\`request_path\`);"
+```
+
+### 同步本地 schema 变更的流程
+
+1. 修改 `src/db/schema.ts`
+2. `pnpm db:generate` 生成迁移 SQL 到 `drizzle/` 目录
+3. 检查生成的 SQL 文件
+4. 用 wrangler 命令在本地执行迁移文件：
+
+```bash
+# 执行单个迁移文件
+pnpm exec wrangler d1 execute moneyjar --local --file ./drizzle/0000_tough_storm.sql
+
+# 或者执行所有迁移
+pnpm exec wrangler d1 execute moneyjar --local --file ./drizzle/0001_demonic_frightful_four.sql
+```
+
+---
+
 ## Drizzle Studio（可视化管理界面）
 
 ```bash
