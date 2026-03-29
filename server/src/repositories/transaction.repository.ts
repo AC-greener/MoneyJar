@@ -18,6 +18,10 @@ export class TransactionRepository {
     return this.db.select().from(transactions).orderBy(desc(transactions.createdAt)).all();
   }
 
+  async getRecent(limit: number) {
+    return this.db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(limit).all();
+  }
+
   async getByPeriod(startDate: string, endDate: string) {
     return this.db
       .select()

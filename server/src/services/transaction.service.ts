@@ -41,6 +41,10 @@ export class TransactionService {
     return this.repo.getAll();
   }
 
+  async listRecent(limit: number) {
+    return this.repo.getRecent(limit);
+  }
+
   async getWeeklyTotal() {
     const { start, end } = getWeekBounds();
     const transactions = await this.repo.getByPeriod(start, end);
@@ -51,6 +55,14 @@ export class TransactionService {
     const { start, end } = getMonthBounds();
     const transactions = await this.repo.getByPeriod(start, end);
     return this.calculateTotals(transactions);
+  }
+
+  async getBalanceReport(period: 'week' | 'month') {
+    if (period === 'week') {
+      return this.getWeeklyTotal();
+    }
+
+    return this.getMonthlyTotal();
   }
 
   async delete(id: number) {

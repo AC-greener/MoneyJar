@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { requestId } from "hono/request-id";
+import { cors } from "hono/cors";
+import { mcpRoute } from "./routes/mcp.route";
 import { transactionRoute } from "./routes/transaction.route";
 import { createLoggerMiddleware } from "./middlewares/logger";
 import { createErrorHandler } from "./middlewares/error-handler";
@@ -13,6 +15,16 @@ app.use(requestId());
 // Add logger middleware
 app.use(createLoggerMiddleware());
 
+app.use(
+  "/api/mcp",
+  cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowHeaders: ["Authorization", "Content-Type", "Accept", "Mcp-Protocol-Version", "Mcp-Session-Id", "Last-Event-ID"],
+    exposeHeaders: ["Mcp-Session-Id"],
+  })
+);
+
 // Global error handler
 app.onError(createErrorHandler());
 
@@ -25,6 +37,7 @@ app
 
 // Register transaction routes
 app.route("/api/transactions", transactionRoute);
+app.route("/api/mcp", mcpRoute);
 
 export default {
   fetch: app.fetch,

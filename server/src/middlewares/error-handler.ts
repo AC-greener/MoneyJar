@@ -1,3 +1,5 @@
+import { HTTPException } from "hono/http-exception";
+
 /**
  * 错误处理中间件
  *
@@ -15,6 +17,11 @@ export function createErrorHandler() {
   return async (err: Error, c: any) => {
     // 获取请求 ID，用于关联日志条目
     const requestId = c.get('requestId') || 'unknown';
+
+    // Hono/MCP 主动抛出的 HTTPException 应保持原始状态码和响应体
+    if (err instanceof HTTPException) {
+      return err.getResponse();
+    }
 
     // 记录完整错误堆栈，便于调试
     console.error(`[${requestId}] Unhandled error:`, err.message, err.stack);

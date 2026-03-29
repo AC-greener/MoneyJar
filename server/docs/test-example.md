@@ -83,12 +83,29 @@ curl -X DELETE http://localhost:8787/api/transactions/99999
 
 ## MCP 远程调用 (ALL /api/mcp)
 
+### 先确认你要走哪条链路
+
+- 如果你在调试 **Cloudflare 上的远程 MCP**，建议让 `curl` 走本地代理，这样更接近你在 Cursor / Claude Desktop 里的真实访问路径。
+- 如果你在调试 **本地 `wrangler dev`**，通常不要走代理，直接访问 `http://localhost:8787/api/mcp` 即可。
+- 如果你的本地代理端口不是 `7890`，把下面示例里的地址改成你自己的代理端口。
+
+### 通过本地代理访问远程 MCP
+
+下面示例假设：
+- 远程 MCP 地址是 `https://server.zhu15929774304.workers.dev/api/mcp`
+- 本地代理是 `http://127.0.0.1:7890`
+- MCP Token 是 `dev-mcp-token`
+- MCP 协议版本是 `2025-06-18`
+
+这里我们用 `--proxy` 显式指定代理，避免环境变量影响别的命令。
+
 ### 初始化 MCP 连接
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
@@ -106,10 +123,11 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 查询 MCP tools 列表
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 2,
@@ -120,10 +138,11 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 通过 MCP 创建一笔交易
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 3,
@@ -142,10 +161,11 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 通过 MCP 查询单笔交易
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 4,
@@ -161,10 +181,11 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 通过 MCP 查询最近交易
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 5,
@@ -180,7 +201,7 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 通过 MCP 查询本月汇总
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -199,7 +220,7 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 通过 MCP 删除一笔交易
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer dev-mcp-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -218,10 +239,11 @@ curl -X POST http://localhost:8787/api/mcp \
 
 ### 鉴权失败示例
 ```bash
-curl -X POST http://localhost:8787/api/mcp \
+curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
   -H "Authorization: Bearer wrong-token" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Protocol-Version: 2025-06-18" \
   -d '{
     "jsonrpc": "2.0",
     "id": 8,
@@ -229,6 +251,29 @@ curl -X POST http://localhost:8787/api/mcp \
     "params": {}
   }'
 ```
+
+### 如果你要直连本地 wrangler dev
+
+本地调试时可以不用代理，直接把地址换回 `http://localhost:8787/api/mcp`。
+
+如果你的系统环境里已经设置了全局代理，而你想明确绕过它，可以加：
+
+```bash
+curl --noproxy localhost,127.0.0.1 -X POST http://localhost:8787/api/mcp \
+  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 9,
+    "method": "tools/list",
+    "params": {}
+  }'
+```
+
+这里 `--noproxy localhost,127.0.0.1` 的意思是：
+- `localhost` 和 `127.0.0.1` 不走代理
+- 其余地址仍然可以继续按系统代理规则处理
 
 ### MCP Inspector 调试
 
