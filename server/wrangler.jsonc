@@ -3,15 +3,28 @@
   "name": "server",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-23",
-  "ai": {
-    "binding": "AI"
+  "triggers": {
+    "crons": ["0 0 * * *"]
   },
+  // "ai": {
+  // 	"binding": "AI",
+  // 	"remote": false,
+  // },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "remote": true,
+      "database_name": "moneyjar",
+      "database_id": "f0bd5e6d-80d6-408c-8a5d-b4f1c689b522",
+      "migrations_dir": "drizzle"
+    }
+  ],
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
+  "vars": {
+    "MCP_TOKEN": ""
+  },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
@@ -24,15 +37,8 @@
   //     "bucket_name": "my-bucket"
   //   }
   // ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "moneyjar",
-      "database_id": "替换为你的 database_id"
-    }
-  ],
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }
