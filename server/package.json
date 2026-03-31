@@ -9,6 +9,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:generate:local": "drizzle-kit generate --config=drizzle.local.config.ts",
+    "db:migrate:local": "drizzle-kit migrate --config=drizzle.local.config.ts",
+    "db:push:local": "drizzle-kit push --config=drizzle.local.config.ts",
+    "db:studio:local": "drizzle-kit studio --config=drizzle.local.config.ts",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "test": "vitest run",
     "test:watch": "vitest"
