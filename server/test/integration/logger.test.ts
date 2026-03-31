@@ -8,7 +8,8 @@ const CREATE_TRANSACTIONS_TABLE = `CREATE TABLE "transactions" (
   "amount" real NOT NULL,
   "category" text(50) NOT NULL,
   "note" text(256),
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
+  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "deleted_at" text
 )`;
 
 const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE "request_logs" (

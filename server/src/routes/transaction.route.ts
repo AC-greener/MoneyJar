@@ -57,7 +57,7 @@ transactionRoute
     const service = new TransactionService(db);
     const id = Number(c.req.param('id'));
 
-    const result = await service.delete(id);
+    const result = await service.softDelete(id);
     if (!result) {
       return c.json({ error: 'Transaction not found', requestId: c.get('requestId') }, 404);
     }

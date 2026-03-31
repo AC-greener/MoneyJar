@@ -8,6 +8,7 @@ export const transactions = sqliteTable('transactions', {
   category: text('category', { length: 50 }).notNull(),
   note: text('note', { length: 256 }),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  deletedAt: text('deleted_at'), // NULL = 未删除，ISO 时间戳 = 已删除
 });
 
 export const requestLogs = sqliteTable('request_logs', {

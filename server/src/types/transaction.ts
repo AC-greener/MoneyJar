@@ -5,6 +5,7 @@ export const CreateTransactionSchema = z.object({
   amount: z.number().positive(),
   category: z.string().min(1).max(50),
   note: z.string().max(256).optional(),
+  created_at: z.string().optional(),
 });
 
 export const TransactionResponseSchema = z.object({

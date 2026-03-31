@@ -15,6 +15,13 @@
       "when": 1774682757620,
       "tag": "0001_demonic_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774966699669,
+      "tag": "0002_cuddly_clea",
+      "breakpoints": true
     }
   ]
 }

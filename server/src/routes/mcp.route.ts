@@ -122,7 +122,7 @@ function createMcpServer() {
     },
     async (args) => {
       const service = createTransactionService(getBindings());
-      const deleted = await service.delete(args.id);
+      const deleted = await service.softDelete(args.id);
 
       if (!deleted) {
         return createToolError('未找到需要删除的交易记录。');
