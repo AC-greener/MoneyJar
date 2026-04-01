@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const transactions = sqliteTable('transactions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -10,6 +10,17 @@ export const transactions = sqliteTable('transactions', {
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   deletedAt: text('deleted_at'), // NULL = 未删除，ISO 时间戳 = 已删除
 });
+
+export const apiTokens = sqliteTable('api_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  token: text('token').notNull(),
+  name: text('name').notNull(),
+  type: text('type', { length: 10 }).notNull(), // 'mcp' | 'app'
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: text('expires_at'), // 预留字段，暂不使用
+}, (table) => ({
+  idxToken: uniqueIndex('idx_token').on(table.token),
+}));
 
 export const requestLogs = sqliteTable('request_logs', {
   id: text('id').primaryKey(),

@@ -1,5 +1,7 @@
 import type { Context, Next } from 'hono';
+import { drizzle } from 'drizzle-orm/d1';
 import { McpAuthHeaderSchema } from '../types/mcp';
+import { ApiTokenRepository } from '../repositories/api-token.repository';
 
 function createUnauthorizedResponse(c: Context) {
   return c.json(
@@ -25,7 +27,17 @@ export function createMcpAuthMiddleware() {
     }
 
     const token = parsed.data.slice('Bearer '.length).trim();
-    if (!token || token !== c.env.MCP_TOKEN) {
+    if (!token) {
+      return createUnauthorizedResponse(c);
+    }
+
+    // 从数据库查询 token
+    const db = drizzle(c.env.DB);
+    const apiTokenRepo = new ApiTokenRepository(db);
+    const apiToken = await apiTokenRepo.findByToken(token);
+
+    // 验证 token 存在且类型为 mcp
+    if (!apiToken || apiToken.type !== 'mcp') {
       return createUnauthorizedResponse(c);
     }
 

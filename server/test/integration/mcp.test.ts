@@ -31,12 +31,28 @@ const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE "request_logs" (
   "ai_processing_time" integer
 )`;
 
+const CREATE_API_TOKENS_TABLE = `CREATE TABLE "api_tokens" (
+  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "token" text NOT NULL,
+  "name" text NOT NULL,
+  "type" text(10) NOT NULL,
+  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "expires_at" text
+)`;
+
+// 测试用的 MCP Token
+const TEST_MCP_TOKEN = 'test-mcp-token-12345';
+
 async function setupD1() {
   const migration: D1Migration = {
-    name: '0001_add_mcp_support',
-    queries: [CREATE_TRANSACTIONS_TABLE, CREATE_REQUEST_LOGS_TABLE],
+    name: '0003_add_api_tokens',
+    queries: [CREATE_TRANSACTIONS_TABLE, CREATE_REQUEST_LOGS_TABLE, CREATE_API_TOKENS_TABLE],
   };
   await applyD1Migrations(env.DB, [migration]);
+}
+
+async function insertTestMcpToken() {
+  await env.DB.exec(`INSERT INTO api_tokens (token, name, type) VALUES ('${TEST_MCP_TOKEN}', 'Test MCP Token', 'mcp')`);
 }
 
 function createJsonRpcRequest(body: unknown, token?: string) {
@@ -73,7 +89,7 @@ async function createClient() {
     {
       requestInit: {
         headers: {
-          Authorization: `Bearer ${env.MCP_TOKEN}`,
+          Authorization: `Bearer ${TEST_MCP_TOKEN}`,
         },
       },
       fetch: createAppFetch(),
@@ -98,6 +114,7 @@ async function createTransaction(body: unknown) {
 
 beforeAll(async () => {
   await setupD1();
+  await insertTestMcpToken();
 });
 
 describe('MCP /api/mcp', () => {

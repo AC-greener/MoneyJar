@@ -94,7 +94,7 @@ curl -X DELETE http://localhost:8787/api/transactions/99999
 下面示例假设：
 - 远程 MCP 地址是 `https://server.zhu15929774304.workers.dev/api/mcp`
 - 本地代理是 `http://127.0.0.1:7890`
-- MCP Token 是 `dev-mcp-token`
+- MCP Token 需要先通过 API 插入到 `api_tokens` 表中
 - MCP 协议版本是 `2025-06-18`
 
 这里我们用 `--proxy` 显式指定代理，避免环境变量影响别的命令。
@@ -102,7 +102,7 @@ curl -X DELETE http://localhost:8787/api/transactions/99999
 ### 初始化 MCP 连接
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Protocol-Version: 2025-06-18" \
@@ -124,7 +124,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 查询 MCP tools 列表
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Protocol-Version: 2025-06-18" \
@@ -139,7 +139,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 通过 MCP 创建一笔交易
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Protocol-Version: 2025-06-18" \
@@ -162,7 +162,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 通过 MCP 查询单笔交易
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Protocol-Version: 2025-06-18" \
@@ -182,7 +182,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 通过 MCP 查询最近交易
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Protocol-Version: 2025-06-18" \
@@ -202,7 +202,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 通过 MCP 查询本月汇总
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -221,7 +221,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 ### 通过 MCP 删除一笔交易
 ```bash
 curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers.dev/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -260,7 +260,7 @@ curl --proxy http://127.0.0.1:7890 -X POST https://server.zhu15929774304.workers
 
 ```bash
 curl --noproxy localhost,127.0.0.1 -X POST http://localhost:8787/api/mcp \
-  -H "Authorization: Bearer dev-mcp-token" \
+  -H "Authorization: Bearer YOUR_MCP_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -280,7 +280,7 @@ curl --noproxy localhost,127.0.0.1 -X POST http://localhost:8787/api/mcp \
 #### 前置条件
 
 - 本地服务已启动，地址为 `http://localhost:8787`
-- `MCP_TOKEN` 已配置为 `dev-mcp-token`
+- 需要先在 `api_tokens` 表中插入一个 MCP 类型的 token
 
 #### 启动 Inspector
 
@@ -292,7 +292,7 @@ npx @modelcontextprotocol/inspector
 
 - `Transport Type` 选择 `Streamable HTTP`
 - `URL` 填入 `http://localhost:8787/api/mcp`
-- `Authorization` 里填入 `Bearer dev-mcp-token`
+- `Authorization` 里填入 `Bearer YOUR_MCP_TOKEN`
 
 #### 验证顺序
 
@@ -348,5 +348,5 @@ curl -X DELETE http://localhost:8787/api/transactions/1
 如果你用 Claude Desktop、Claude Code 或 Cursor 连接这个 MCP，可以先确认下面三点：
 
 1. 远程地址指向 `http://localhost:8787/api/mcp`
-2. 鉴权头使用 `Authorization: Bearer dev-mcp-token`
+2. 鉴权头使用 `Authorization: Bearer YOUR_MCP_TOKEN`（需要先在 `api_tokens` 表中插入对应 token）
 3. 先跑 `tools/list`，确认能看到 `create_transaction`、`get_transaction`、`list_transactions`、`delete_transaction`、`get_balance_report`
