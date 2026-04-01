@@ -204,11 +204,16 @@ describe('MCP /api/mcp', () => {
   });
 
   it('should return a monthly balance report through MCP', async () => {
+    // 获取当前月份第一天，确保交易记录落在当前月份内
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
     await createTransaction({
       type: 'income',
       amount: 5000,
       category: '工资',
       note: '月薪',
+      created_at: firstOfMonth + 'T00:00:00.000Z', // 显式设置 created_at
     });
 
     await createTransaction({
@@ -216,6 +221,7 @@ describe('MCP /api/mcp', () => {
       amount: 100,
       category: '餐饮',
       note: '午饭',
+      created_at: firstOfMonth + 'T12:00:00.000Z', // 显式设置 created_at
     });
 
     const { client, transport } = await createClient();
