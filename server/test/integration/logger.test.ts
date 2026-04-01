@@ -29,6 +29,15 @@ const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE "request_logs" (
   "ai_processing_time" integer
 )`;
 
+const CREATE_API_TOKENS_TABLE = `CREATE TABLE "api_tokens" (
+  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "token" text NOT NULL,
+  "name" text NOT NULL,
+  "type" text(10) NOT NULL,
+  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "expires_at" text
+)`;
+
 interface TransactionResponse {
   id: number;
   type: 'income' | 'expense';
@@ -46,18 +55,24 @@ interface ErrorResponse {
 async function setupD1() {
   const migration: D1Migration = {
     name: '0000_init',
-    queries: [CREATE_TRANSACTIONS_TABLE, CREATE_REQUEST_LOGS_TABLE],
+    queries: [CREATE_TRANSACTIONS_TABLE, CREATE_REQUEST_LOGS_TABLE, CREATE_API_TOKENS_TABLE],
   };
   await applyD1Migrations(env.DB, [migration]);
+  // 插入测试用 MCP Token
+  await env.DB.prepare(`INSERT INTO api_tokens (token, name, type) VALUES ('test-token-coco', 'test-token', 'mcp')`).run();
 }
 
 function createJsonRequest(path: string, method: string, body?: unknown) {
   const url = new URL(path, 'http://localhost');
   const init: RequestInit = { method };
+  const headers: Record<string, string> = {};
   if (body !== undefined) {
-    init.headers = { 'Content-Type': 'application/json' };
+    headers['Content-Type'] = 'application/json';
     init.body = JSON.stringify(body);
   }
+  // 添加认证头
+  headers['Authorization'] = 'Bearer test-token-coco';
+  init.headers = headers;
   return new Request(url.toString(), init);
 }
 

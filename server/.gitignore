@@ -29,6 +29,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# scripts
+scripts/
+
 # misc
 .DS_Store
 .worktrees/

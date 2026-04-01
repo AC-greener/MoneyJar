@@ -52,7 +52,7 @@ async function setupD1() {
 }
 
 async function insertTestMcpToken() {
-  await env.DB.exec(`INSERT INTO api_tokens (token, name, type) VALUES ('${TEST_MCP_TOKEN}', 'Test MCP Token', 'mcp')`);
+  await env.DB.exec(`INSERT INTO api_tokens (token, name, type) VALUES ('${TEST_MCP_TOKEN}', 'test-token', 'mcp')`);
 }
 
 function createJsonRpcRequest(body: unknown, token?: string) {
@@ -105,6 +105,7 @@ async function createTransaction(body: unknown) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TEST_MCP_TOKEN}`,
     },
     body: JSON.stringify(body),
   });

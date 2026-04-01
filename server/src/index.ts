@@ -5,6 +5,7 @@ import { mcpRoute } from "./routes/mcp.route";
 import { transactionRoute } from "./routes/transaction.route";
 import { createLoggerMiddleware } from "./middlewares/logger";
 import { createErrorHandler } from "./middlewares/error-handler";
+import { createApiAuthMiddleware } from "./middlewares/mcp-auth";
 
 // 2. 将类型传给 Hono 实例
 const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -36,6 +37,7 @@ app
   })
 
 // Register transaction routes
+app.use('/api/transactions', createApiAuthMiddleware());
 app.route("/api/transactions", transactionRoute);
 app.route("/api/mcp", mcpRoute);
 
