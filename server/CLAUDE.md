@@ -66,6 +66,7 @@ if (!parsed.success) {
 | -------------------- | --------------------------- |
 | **本地开发**         | `pnpm dev`                  |
 | **生产部署**         | `pnpm deploy`               |
+| **类型检查**         | `pnpm typecheck`            |
 | **生成迁移文件**     | `pnpm db:generate`          |
 | **应用迁移**         | `pnpm db:migrate`           |
 | **直接推送（开发用）** | `pnpm db:push`            |
@@ -81,6 +82,31 @@ if (!parsed.success) {
 3. **AI 输出约束**：调用 Workers AI 时，必须在 Prompt 中明确要求返回 JSON，并用 Zod 解析结果，不得直接使用 AI 原始字符串输出。
 4. **类型安全**：服务端 JSON 返回结构必须与 Android 端 Kotlin Data Class 严格一致，变更时需同步通知。
 5. **错误处理**：AI 推理可能超时或返回格式错误，必须有 fallback 处理逻辑，向客户端返回明确的错误码。
+
+------
+
+## TypeScript 收尾门禁
+
+所有 TypeScript 任务都必须遵循“先对齐类型，再写实现，结束前过类型检查”的流程，禁止把 TS 报错留到人工收尾阶段。
+
+### 开发前检查
+
+- 开工前必须先阅读相关 `src/types/`、`src/db/schema.ts`、service/repository 接口和对应测试，确认类型来源后再编码。
+- 默认使用单向类型流：`schema -> inferred type -> service/repository -> route`，禁止在多个层重复手写一套相同类型。
+- 若任务会新增字段、修改返回结构或调整函数签名，必须先识别受影响的调用链，再开始改代码。
+
+### 实现过程约束
+
+- 新增字段时，必须同步更新 schema、推导类型、实现代码和测试，禁止只改其中一处。
+- 类型转换只允许集中在边界层（HTTP 入参、数据库映射、第三方响应适配），业务逻辑内部应尽量消费已校验的类型。
+- 禁止使用 `any`、`as unknown as`、忽略报错式写法或临时类型断言来掩盖问题，除非计划文档明确允许且说明原因。
+- 修改 public interface、Zod Schema、Drizzle Schema 或 service 返回值时，必须同步检查所有调用点和测试。
+
+### 完成前门禁
+
+- 任务完成前必须运行 `pnpm typecheck`，若存在 TypeScript 报错，禁止宣告完成。
+- 若仓库本身已有 TS 报错，必须明确区分“本次引入问题”和“原有遗留问题”，不得把基线不绿的状态伪装为任务完成。
+- Claude Code 项目级 `Stop` hook 会在结束前自动执行 `pnpm typecheck`；如果检查失败，Claude 必须继续修复后再结束本轮任务。
 
 ------
 
@@ -220,5 +246,9 @@ src/routes/transaction.route.ts      →  test/integration/transaction.test.ts
 
 ### Agent 自动化流程
 
-- 宣布任务完成前，必须运行 `pnpm test` 并汇报结果。
+- 宣布任务完成前，必须按顺序运行以下检查并汇报结果：
+  1. `pnpm typecheck`
+  2. 与本次改动相关的测试
+  3. 如任务涉及格式或规范调整，再运行对应 lint / format 检查
 - 测试未通过时，禁止继续推进新功能，必须优先修复。
+- `pnpm typecheck` 未通过时，禁止宣告任务完成，必须优先修复类型错误或明确说明基线遗留问题。

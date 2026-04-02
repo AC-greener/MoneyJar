@@ -31,7 +31,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # scripts
-scripts/
+scripts/*
+!scripts/claude-stop-typecheck.sh
 
 # misc
 .DS_Store
