@@ -41,5 +41,13 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  // 生产环境配置：pnpm deploy --env production
+  "env": {
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "production"
+      }
+    }
   }
 }

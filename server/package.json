@@ -4,7 +4,7 @@
   "scripts": {
     "dev2": "http_proxy=http://127.0.0.1:7897 wrangler dev",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
+    "deploy": "wrangler deploy --minify --env production",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
