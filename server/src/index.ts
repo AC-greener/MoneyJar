@@ -6,7 +6,7 @@ import { transactionRoute } from "./routes/transaction.route";
 import { authRoute } from "./routes/auth.route";
 import { createLoggerMiddleware } from "./middlewares/logger";
 import { createErrorHandler } from "./middlewares/error-handler";
-import { createApiAuthMiddleware } from "./middlewares/mcp-auth";
+import { createUserAuthMiddleware } from "./middlewares/user-auth";
 
 // 2. 将类型传给 Hono 实例
 const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -54,8 +54,9 @@ app.get('/api/dev/token', async (c) => {
 // 注册认证路由（登录/登出/刷新/获取用户信息）
 app.route("/api/auth", authRoute);
 
-// 注册交易路由（使用 API Token 鉴权，Phase 4 改为 JWT）
-app.use('/api/transactions', createApiAuthMiddleware());
+// 注册交易路由（JWT 用户鉴权，通配符覆盖子路径如 /:id）
+app.use('/api/transactions', createUserAuthMiddleware());
+app.use('/api/transactions/*', createUserAuthMiddleware());
 app.route("/api/transactions", transactionRoute);
 app.route("/api/mcp", mcpRoute);
 
