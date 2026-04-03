@@ -8,6 +8,10 @@ declare namespace Cloudflare {
 	interface Env {
 		DB: D1Database;
 		MCP_TOKEN: string;
+		// 以下字段为手动补充，下次执行 `wrangler types` 后需重新检查是否被覆盖
+		JWT_SECRET: string;
+		GOOGLE_CLIENT_ID: string;
+		ENVIRONMENT: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}

@@ -3,6 +3,7 @@ import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 import { mcpRoute } from "./routes/mcp.route";
 import { transactionRoute } from "./routes/transaction.route";
+import { authRoute } from "./routes/auth.route";
 import { createLoggerMiddleware } from "./middlewares/logger";
 import { createErrorHandler } from "./middlewares/error-handler";
 import { createApiAuthMiddleware } from "./middlewares/mcp-auth";
@@ -10,10 +11,10 @@ import { createApiAuthMiddleware } from "./middlewares/mcp-auth";
 // 2. 将类型传给 Hono 实例
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
-// Add request-id middleware
+// 注册请求 ID 中间件
 app.use(requestId());
 
-// Add logger middleware
+// 注册日志中间件
 app.use(createLoggerMiddleware());
 
 app.use(
@@ -26,7 +27,7 @@ app.use(
   })
 );
 
-// Global error handler
+// 全局错误处理器
 app.onError(createErrorHandler());
 
 app
@@ -36,7 +37,24 @@ app
     });
   })
 
-// Register transaction routes
+// 开发模式调试路由：无需 Google OAuth，直接获取测试 JWT（仅 ENVIRONMENT=development 时可用）
+app.get('/api/dev/token', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'Not found' }, 404);
+  }
+  const plan = c.req.query('plan') === 'pro' ? 'pro' : 'free';
+  const { signJwt } = await import('./services/auth.service');
+  const token = await signJwt(
+    { sub: 'dev-user-00000000-0000-0000-0000-000000000001', email: 'dev@moneyjar.test', plan },
+    c.env.JWT_SECRET,
+  );
+  return c.json({ access_token: token });
+});
+
+// 注册认证路由（登录/登出/刷新/获取用户信息）
+app.route("/api/auth", authRoute);
+
+// 注册交易路由（使用 API Token 鉴权，Phase 4 改为 JWT）
 app.use('/api/transactions', createApiAuthMiddleware());
 app.route("/api/transactions", transactionRoute);
 app.route("/api/mcp", mcpRoute);

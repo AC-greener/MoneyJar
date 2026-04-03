@@ -34,6 +34,10 @@
   //     "bucket_name": "my-bucket"
   //   }
   // ],
+  // 非敏感环境标识变量（敏感变量 JWT_SECRET / GOOGLE_CLIENT_ID 放在 .dev.vars 中）
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
