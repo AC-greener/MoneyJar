@@ -1,6 +1,10 @@
 /// <reference types="node" />
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
+
+// 优先读 .env.local（本地开发），然后回退到 .env（生产 CI）
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 export default defineConfig({
   out: './drizzle',
