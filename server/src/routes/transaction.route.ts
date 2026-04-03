@@ -6,8 +6,12 @@ import {
   TransactionResponseSchema,
   PeriodQuerySchema,
 } from '../types/transaction';
+import { createUserAuthMiddleware } from '../middlewares/user-auth';
 
 export const transactionRoute = new Hono<{ Bindings: CloudflareBindings }>();
+
+// 所有交易路由均需 JWT 鉴权
+transactionRoute.use('/*', createUserAuthMiddleware());
 
 transactionRoute
   .post('/', async (c) => {
