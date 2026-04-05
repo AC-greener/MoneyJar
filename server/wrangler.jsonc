@@ -13,7 +13,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "remote": true,
+      "remote": false,
       "database_name": "moneyjar",
       "database_id": "f0bd5e6d-80d6-408c-8a5d-b4f1c689b522",
       "migrations_dir": "drizzle"
@@ -42,9 +42,33 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
-  // 生产环境配置：pnpm deploy --env production
+  // 预览环境配置：pnpm wrangler deploy --env staging
   "env": {
+    "staging": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "remote": true,
+          "database_name": "moneyjar-staging",
+          "database_id": "c78c6cd1-cd2a-4c97-aa25-4131e1f3e92b",
+          "migrations_dir": "drizzle"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging"
+      }
+    },
+    // 生产环境配置：pnpm deploy --env production
     "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "remote": true,
+          "database_name": "moneyjar",
+          "migrations_dir": "drizzle",
+          "database_id": "f0bd5e6d-80d6-408c-8a5d-b4f1c689b522"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "production"
       }
