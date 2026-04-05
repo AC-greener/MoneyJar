@@ -35,15 +35,16 @@ app
     });
   })
 
-// 开发模式调试路由：无需 Google OAuth，直接获取测试 JWT（仅 ENVIRONMENT=development 时可用）
+// 开发模式调试路由：无需 Google OAuth，直接获取测试 JWT（仅 development 环境可用）
 app.get('/api/dev/token', async (c) => {
   if (c.env.ENVIRONMENT !== 'development') {
     return c.json({ error: 'Not found' }, 404);
   }
   const plan = c.req.query('plan') === 'pro' ? 'pro' : 'free';
   const { signJwt } = await import('./services/auth.service');
+  // 使用 RFC 4122 nil UUID（全零）- 这是 Zod uuid() 验证的唯一全零变体
   const token = await signJwt(
-    { sub: 'dev-user-00000000-0000-0000-0000-000000000001', email: 'dev@moneyjar.test', plan },
+    { sub: '00000000-0000-0000-0000-000000000000', email: 'dev@moneyjar.test', plan },
     c.env.JWT_SECRET,
   );
   return c.json({ access_token: token });
@@ -53,7 +54,9 @@ app.get('/api/dev/token', async (c) => {
 app.route("/api/auth", authRoute);
 
 // 注册交易路由（鉴权已在 transactionRoute 内部挂载）
+// 注意：Hono 对尾随斜杠敏感，需要分别处理带和不带尾随斜杠的路径
 app.route("/api/transactions", transactionRoute);
+app.route("/api/transactions/", transactionRoute);
 app.route("/api/mcp", mcpRoute);
 
 export default {
