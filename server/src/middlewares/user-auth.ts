@@ -1,6 +1,8 @@
 import type { Context, Next } from 'hono';
-import { verifyJwt } from '../services/auth.service';
+import { HTTPException } from 'hono/http-exception';
+import { jwt } from 'hono/jwt';
 import type { JwtPayload } from '../types/auth';
+import { JwtPayloadSchema } from '../types/auth';
 
 // 扩展 Hono 的 ContextVariableMap，使 c.var.user 拥有正确的 TypeScript 类型
 declare module 'hono' {
@@ -16,25 +18,26 @@ declare module 'hono' {
  */
 export function createUserAuthMiddleware() {
   return async (c: Context<{ Bindings: CloudflareBindings }>, next: Next) => {
-    const authHeader = c.req.header('Authorization');
+    const verifyJwtMiddleware = jwt({
+      secret: c.env.JWT_SECRET,
+      alg: 'HS256',
+    });
 
-    // 检查 Authorization 头是否存在且格式正确
-    if (!authHeader?.startsWith('Bearer ')) {
+    try {
+      await verifyJwtMiddleware(c, async () => {});
+    } catch (err) {
+      if (err instanceof HTTPException) {
+        return c.json({ error: 'Unauthorized' }, 401);
+      }
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // 提取 token 字符串（去掉 "Bearer " 前缀）
-    const token = authHeader.slice('Bearer '.length).trim();
-    const jwtSecret = c.env.JWT_SECRET;
-
-    // 验证 JWT 签名及有效期
-    const payload = await verifyJwt(token, jwtSecret);
-    if (!payload) {
+    const parsed = JwtPayloadSchema.safeParse(c.get('jwtPayload'));
+    if (!parsed.success) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // 将解析后的 JWT payload 注入 Hono 上下文变量，供路由层使用
-    c.set('user', payload);
+    c.set('user', parsed.data);
     await next();
   };
 }

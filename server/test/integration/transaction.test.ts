@@ -144,6 +144,20 @@ beforeAll(async () => {
 });
 
 describe('POST /api/transactions', () => {
+  it('should reject requests without JWT', async () => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request('http://localhost/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mockTransaction),
+      }),
+      env,
+      ctx
+    );
+    expect(res.status).toBe(401);
+  });
+
   it('should create a transaction with valid data', async () => {
     const ctx = createExecutionContext();
     const res = await worker.fetch(

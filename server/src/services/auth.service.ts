@@ -1,52 +1,8 @@
 import { drizzle } from 'drizzle-orm/d1';
+import { sign, verify } from 'hono/jwt';
 import { UserRepository } from '../repositories/user.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { JwtPayloadSchema, type JwtPayload } from '../types/auth';
-
-// ─────────────────────────────────────────────
-// Base64URL 编解码辅助函数（Web Crypto API 使用 ArrayBuffer，不能直接用 btoa/atob）
-// ─────────────────────────────────────────────
-
-/**
- * 将普通字符串编码为 Base64URL 格式（用于 JWT header / payload 段）
- */
-function base64UrlEncode(data: string): string {
-  return btoa(data)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-/**
- * 将 ArrayBuffer 编码为 Base64URL 格式（用于 JWT 签名段）
- */
-function base64UrlEncodeBuffer(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-/**
- * 将 Base64URL 字符串解码为 ArrayBuffer（用于验证 JWT 签名）
- */
-function base64UrlDecodeBuffer(base64url: string): ArrayBuffer {
-  // 将 Base64URL 转回标准 Base64 格式
-  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  // 补齐 padding
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
 
 // ─────────────────────────────────────────────
 // Google ID Token 验证
@@ -104,35 +60,14 @@ export async function signJwt(
   payload: { sub: string; email: string; plan: string },
   secret: string,
 ): Promise<string> {
-  const header = { alg: 'HS256', typ: 'JWT' };
   const iat = Math.floor(Date.now() / 1000);
   const exp = iat + 15 * 60; // 有效期 15 分钟
 
-  const fullPayload = { ...payload, iat, exp };
-
-  // 编码 header 和 payload 段
-  const headerB64 = base64UrlEncode(JSON.stringify(header));
-  const payloadB64 = base64UrlEncode(JSON.stringify(fullPayload));
-  const message = `${headerB64}.${payloadB64}`;
-
-  // 导入 HMAC-SHA256 密钥
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
+  return sign(
+    { ...payload, iat, exp },
+    secret,
+    'HS256',
   );
-
-  // 生成签名
-  const signatureBuffer = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    new TextEncoder().encode(message),
-  );
-  const sigB64 = base64UrlEncodeBuffer(signatureBuffer);
-
-  return `${message}.${sigB64}`;
 }
 
 /**
@@ -143,37 +78,7 @@ export async function verifyJwt(
   secret: string,
 ): Promise<JwtPayload | null> {
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-
-    // 导入 HMAC-SHA256 密钥（用于验证）
-    const key = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    );
-
-    // 还原签名 ArrayBuffer
-    const sigBuffer = base64UrlDecodeBuffer(parts[2]);
-
-    // 验证签名
-    const message = `${parts[0]}.${parts[1]}`;
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      sigBuffer,
-      new TextEncoder().encode(message),
-    );
-    if (!valid) return null;
-
-    // 解码并解析 payload
-    const payloadStr = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-    const rawPayload = JSON.parse(payloadStr);
-
-    // 检查是否已过期
-    if (rawPayload.exp < Math.floor(Date.now() / 1000)) return null;
+    const rawPayload = await verify(token, secret, 'HS256');
 
     // 用 Zod Schema 做结构校验，确保字段类型安全
     const parsed = JwtPayloadSchema.safeParse(rawPayload);

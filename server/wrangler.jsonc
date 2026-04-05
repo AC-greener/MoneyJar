@@ -39,7 +39,7 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
-  // 预览环境配置：pnpm wrangler deploy --env staging
+  // 预览环境配置：pnpm wrangler deploy --env staging 
   "env": {
     "staging": {
       "d1_databases": [
