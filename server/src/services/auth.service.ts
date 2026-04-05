@@ -198,6 +198,36 @@ export class AuthService {
   }
 
   /**
+   * 为 development/staging 的固定测试用户签发 Access Token + Refresh Token。
+   * 若用户不存在则自动创建，存在则直接复用。
+   */
+  async issueTestTokens(jwtSecret: string) {
+    const upsertedUser = await this.userRepo.upsertByGoogleId({
+      googleId: 'moneyjar-test-user',
+      email: 'staging-test@moneyjar.test',
+      name: 'MoneyJar Test User',
+      avatarUrl: null,
+    });
+
+    const testUser = upsertedUser.plan === 'free'
+      ? upsertedUser
+      : await this.userRepo.updatePlan(upsertedUser.id, 'free');
+
+    await this.refreshTokenRepo.deleteExpiredByUserId(testUser.id);
+
+    const accessToken = await signJwt(
+      { sub: testUser.id, email: testUser.email, plan: testUser.plan },
+      jwtSecret,
+    );
+
+    const refreshToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await this.refreshTokenRepo.create(testUser.id, refreshToken, expiresAt);
+
+    return { accessToken, refreshToken, user: testUser };
+  }
+
+  /**
    * Google 登录主流程：
    * 1. 验证 Google ID Token 合法性
    * 2. Upsert 用户记录（新用户注册 / 老用户更新信息）

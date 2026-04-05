@@ -1,14 +1,29 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { AuthService } from '../services/auth.service';
 import {
   GoogleLoginRequestSchema,
   RefreshRequestSchema,
   LogoutRequestSchema,
+  LoginResponseSchema,
 } from '../types/auth';
 import { createUserAuthMiddleware } from '../middlewares/user-auth';
 
 export const authRoute = new Hono<{ Bindings: CloudflareBindings }>();
+
+function isTestTokenEnabled(env: string) {
+  return env === 'development' || env === 'staging';
+}
+
+function hasValidTestAuth(c: Context<{ Bindings: CloudflareBindings }>) {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return false;
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  return token.length > 0 && token === c.env.TEST_AUTH_TOKEN;
+}
 
 /**
  * POST /api/auth/google
@@ -52,6 +67,43 @@ authRoute.post('/google', async (c) => {
     }
     throw err;
   }
+});
+
+/**
+ * POST /api/auth/test-token
+ * development/staging 调试入口：为固定测试用户签发 access_token + refresh_token
+ */
+authRoute.post('/test-token', async (c) => {
+  if (!isTestTokenEnabled(c.env.ENVIRONMENT)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  if (!c.env.TEST_AUTH_TOKEN) {
+    throw new Error('TEST_AUTH_TOKEN is not configured');
+  }
+
+  if (!hasValidTestAuth(c)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const db = drizzle(c.env.DB);
+  const service = new AuthService(db);
+  const result = await service.issueTestTokens(c.env.JWT_SECRET);
+
+  return c.json(
+    LoginResponseSchema.parse({
+      access_token: result.accessToken,
+      refresh_token: result.refreshToken,
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        avatarUrl: result.user.avatarUrl,
+        plan: result.user.plan,
+      },
+    }),
+    200,
+  );
 });
 
 /**

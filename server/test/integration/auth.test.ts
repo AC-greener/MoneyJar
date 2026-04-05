@@ -175,6 +175,69 @@ describe('GET /api/auth/me', () => {
   });
 });
 
+describe('POST /api/auth/test-token', () => {
+  it('development 环境且携带正确测试密钥时，应返回 access_token 和 refresh_token', async () => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request('http://localhost/api/auth/test-token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${env.TEST_AUTH_TOKEN}` },
+      }),
+      env, ctx
+    );
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      access_token: string;
+      refresh_token: string;
+      user: { id: string; email: string; plan: string };
+    };
+
+    expect(json.access_token).toBeTruthy();
+    expect(json.refresh_token).toBeTruthy();
+    expect(json.user.email).toBe('staging-test@moneyjar.test');
+    expect(json.user.plan).toBe('free');
+
+    const storedUser = await env.DB.prepare(`SELECT id, email FROM users WHERE email = ?`)
+      .bind('staging-test@moneyjar.test')
+      .first<{ id: string; email: string }>();
+    expect(storedUser?.id).toBe(json.user.id);
+
+    const storedToken = await env.DB.prepare(`SELECT token, revoked FROM refresh_tokens WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`)
+      .bind(json.user.id)
+      .first<{ token: string; revoked: number }>();
+    expect(storedToken?.token).toBe(json.refresh_token);
+    expect(storedToken?.revoked).toBe(0);
+  });
+
+  it('测试密钥错误时应返回 401', async () => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request('http://localhost/api/auth/test-token', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer wrong-test-auth-token' },
+      }),
+      env, ctx
+    );
+
+    expect(res.status).toBe(401);
+  });
+
+  it('production 环境下应返回 404', async () => {
+    const productionEnv = { ...env, ENVIRONMENT: 'production' } as typeof env;
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request('http://localhost/api/auth/test-token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${env.TEST_AUTH_TOKEN}` },
+      }),
+      productionEnv, ctx
+    );
+
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('GET /api/dev/token', () => {
   it('开发模式下应返回有效的 JWT', async () => {
     const ctx = createExecutionContext();

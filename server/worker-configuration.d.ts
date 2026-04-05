@@ -11,6 +11,7 @@ declare namespace Cloudflare {
 		// 以下字段为手动补充，下次执行 `wrangler types` 后需重新检查是否被覆盖
 		JWT_SECRET: string;
 		GOOGLE_CLIENT_ID: string;
+		TEST_AUTH_TOKEN: string;
 		ENVIRONMENT: string;
 	}
 }
