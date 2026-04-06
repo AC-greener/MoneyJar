@@ -1,43 +1,12 @@
-import { useState, useCallback, useEffect } from 'react'
-import { VoiceInput } from '@/components/voice/VoiceInput'
-import { TransactionConfirmDialog } from '@/components/transaction/TransactionConfirmDialog'
+import { useEffect, useCallback } from 'react'
+import { ExpenseInput } from '@/components/expense/ExpenseInput'
 import { TransactionList } from '@/components/transaction/TransactionList'
 import { useAuthStore } from '@/stores/authStore'
 import { useTransactionStore } from '@/stores/transactionStore'
-import { useVoiceInputStore } from '@/stores/voiceInputStore'
-import type { VoiceParseResult } from '@/types/api'
-import type { CreateTransactionFormData } from '@/utils/validation'
-
-// Mock voice parsing - in production this would call the backend LLM
-function parseVoiceText(text: string): VoiceParseResult {
-  // Simple pattern matching for demo purposes
-  const amountMatch = text.match(/\d+(\.\d+)?/)
-  const amount = amountMatch ? parseFloat(amountMatch[0]) : 0
-
-  const categories = ['餐饮', '交通', '购物', '娱乐', '医疗', '工资', '投资', '其他']
-  const foundCategory = categories.find((c) => text.includes(c)) || '其他'
-
-  const isExpense = !text.includes('收入') && !text.includes('赚钱')
-  const isIncome = text.includes('收入') || text.includes('赚钱') || text.includes('发工资')
-
-  return {
-    transactions: [{
-      type: isIncome ? 'income' : (isExpense ? 'expense' : 'expense'),
-      amount,
-      category: foundCategory,
-      note: text,
-    }],
-    rawText: text,
-  }
-}
 
 export default function RecordPage() {
   const { isAuthenticated } = useAuthStore()
-  const { transactions, createTransaction, fetchTransactions, deleteTransaction, isLoading, offlineQueue, syncOfflineQueue } = useTransactionStore()
-  const { finalText, parseResult, setParseResult, reset: resetVoiceInput } = useVoiceInputStore()
-
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [pendingTransaction, setPendingTransaction] = useState<CreateTransactionFormData | null>(null)
+  const { transactions, fetchTransactions, deleteTransaction, offlineQueue, syncOfflineQueue } = useTransactionStore()
 
   // Fetch transactions on mount - only when authenticated
   useEffect(() => {
@@ -54,40 +23,9 @@ export default function RecordPage() {
     }
   }, [offlineQueue.length, syncOfflineQueue])
 
-  // Handle voice transcript - directly set state without useEffect
-  const handleTranscript = useCallback((text: string) => {
-    // Simulate LLM parsing (in production, this would call the backend API)
-    const mockParseResult: VoiceParseResult = parseVoiceText(text)
-    setParseResult(mockParseResult)
-    // Directly show dialog with parsed result
-    const suggested = mockParseResult.transactions[0]
-    if (suggested.amount > 0) {
-      setPendingTransaction({
-        type: suggested.type,
-        amount: suggested.amount,
-        category: suggested.category,
-        note: suggested.note,
-      })
-      setShowConfirmDialog(true)
-    }
-  }, [setParseResult])
-
-  // Handle transaction confirmation
-  const handleConfirmTransaction = async (data: CreateTransactionFormData) => {
-    await createTransaction({
-      type: data.type,
-      amount: data.amount,
-      category: data.category,
-      note: data.note,
-    })
-    resetVoiceInput()
-    setShowConfirmDialog(false)
-    setPendingTransaction(null)
-  }
-
-  const handleDialogClose = () => {
-    setShowConfirmDialog(false)
-  }
+  const handleSuccess = useCallback(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
 
   const handleDelete = async (id: number) => {
     try {
@@ -141,10 +79,6 @@ export default function RecordPage() {
     )
   }
 
-  // Determine if we should show the "view confirmation" button
-  const hasParseResult = parseResult && parseResult.transactions.length > 0 && parseResult.transactions[0].amount > 0
-  const showViewConfirmation = hasParseResult && !showConfirmDialog
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -156,23 +90,9 @@ export default function RecordPage() {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Voice Input Section */}
-        <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-          <VoiceInput onTranscript={handleTranscript} disabled={isLoading} />
-
-          {showViewConfirmation && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-sm text-green-600 dark:text-green-400 mb-2">
-                识别成功！
-              </p>
-              <button
-                onClick={() => setShowConfirmDialog(true)}
-                className="w-full py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
-              >
-                查看并确认交易
-              </button>
-            </div>
-          )}
+        {/* Expense Input Section */}
+        <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4">
+          <ExpenseInput onSuccess={handleSuccess} />
         </section>
 
         {/* Offline Queue Indicator */}
@@ -192,17 +112,6 @@ export default function RecordPage() {
           <TransactionList transactions={(transactions || []).slice(0, 10)} onDelete={handleDelete} />
         </section>
       </main>
-
-      {/* Confirmation Dialog */}
-      {pendingTransaction && (
-        <TransactionConfirmDialog
-          isOpen={showConfirmDialog}
-          onClose={handleDialogClose}
-          onConfirm={handleConfirmTransaction}
-          rawText={finalText}
-          suggestedTransaction={pendingTransaction}
-        />
-      )}
     </div>
   )
 }

@@ -127,6 +127,22 @@
 - [ ] T053 Configure Cloudflare Pages deployment settings
 - [ ] T054 Final E2E testing and bug fixes
 
+## Phase 3.5: ExpenseInput 组合组件 (记账页面增强)
+
+**目标**: 增强记账页面，将输入框与语音按钮组合，支持直接提交
+
+- [x] T055 [P] [US1] Create ExpenseInput component combining text input + voice button + submit
+- [x] T056 [P] [US1] Integrate useVoiceInput hook into ExpenseInput
+- [x] T057 [US1] Update RecordPage to use ExpenseInput instead of VoiceInput section
+- [x] T058 [US1] Add input field state management for voice input
+- [x] T059 [P] [US1] Update unit tests for RecordPage with ExpenseInput
+- [x] T060 [P] [US1] Add integration tests for expense submission flow
+- [ ] T061 [US1] Add success/error toast notification
+- [ ] T062 [US1] Add keyboard support (Enter to submit, mic button focus)
+- [ ] T063 [US1] Mobile responsive refinement for ExpenseInput
+
+**Note**: 移除了 TransactionConfirmDialog 弹窗确认，简化流程为直接提交。
+
 ## Dependency Graph
 
 ```

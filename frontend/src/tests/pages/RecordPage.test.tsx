@@ -261,7 +261,7 @@ describe('RecordPage', () => {
       expect(screen.getByText('有 2 笔交易待同步到服务器')).toBeInTheDocument()
     })
 
-    it('已有解析结果时显示查看确认按钮', () => {
+    it('显示记账输入框和提交按钮', () => {
       const mockAuthStore = {
         user: mockUser,
         isAuthenticated: true,
@@ -279,15 +279,7 @@ describe('RecordPage', () => {
       ;(useTransactionStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
         getMockTransactionStore({ transactions: mockTransactions })
       )
-      ;(useVoiceInputStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-        getMockVoiceInputStore({
-          finalText: '午饭100',
-          parseResult: {
-            rawText: '午饭100',
-            transactions: [{ type: 'expense', amount: 100, category: '餐饮', note: '午饭' }],
-          },
-        })
-      )
+      ;(useVoiceInputStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(getMockVoiceInputStore())
 
       render(
         <MemoryRouter>
@@ -295,7 +287,9 @@ describe('RecordPage', () => {
         </MemoryRouter>
       )
 
-      expect(screen.getByText('查看并确认交易')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('今天午餐花了50元')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '提交记账' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '开始语音输入' })).toBeInTheDocument()
     })
   })
 })
