@@ -55,20 +55,5 @@
         "ENVIRONMENT": "staging"
       }
     },
-    // 生产环境配置：pnpm deploy --env production
-    "production": {
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "remote": true,
-          "database_name": "moneyjar",
-          "migrations_dir": "drizzle",
-          "database_id": "f0bd5e6d-80d6-408c-8a5d-b4f1c689b522"
-        }
-      ],
-      "vars": {
-        "ENVIRONMENT": "production"
-      }
-    }
   }
 }
