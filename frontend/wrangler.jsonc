@@ -4,5 +4,11 @@
   "compatibility_date": "2026-03-23",
   "pages": {
     "build_output_dir": "./dist"
-  }
+  },
+  // 自定义域名配置：正式环境绑定到主域名，由 Pages 托管静态资源与 SPA
+  // 实际域名需在 Cloudflare Dashboard 中绑定后生效
+  "routes": [
+    { "pattern": "moneyjar.zhutongtong.cn", "zone_name": "moneyjar.zhutongtong.cn" }
+  ],
+  "workers_dev": false
 }

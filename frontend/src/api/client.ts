@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosError } from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787'
+// 生产环境使用相对路径 /api，开发环境通过 VITE_API_BASE_URL 配置独立后端地址
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({

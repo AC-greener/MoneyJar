@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
-function Thrower() {
+function Thrower(): React.ReactNode {
   throw new Error('boom')
 }
 

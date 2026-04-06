@@ -19,9 +19,9 @@ vi.mock('@/stores/voiceInputStore', () => ({
   useVoiceInputStore: () => storeState,
 }))
 
-let recognitionInstance: MockSpeechRecognition | null = null
-
 class MockSpeechRecognition {
+  static lastInstance: MockSpeechRecognition | null = null
+
   continuous = false
   interimResults = false
   lang = ''
@@ -34,7 +34,7 @@ class MockSpeechRecognition {
   abort = vi.fn()
 
   constructor() {
-    recognitionInstance = this
+    MockSpeechRecognition.lastInstance = this
   }
 }
 
@@ -45,9 +45,11 @@ describe('useVoiceInput', () => {
     storeState.interimText = ''
     storeState.finalText = ''
     storeState.error = null
-    recognitionInstance = null
-    delete (window as Window & { SpeechRecognition?: typeof MockSpeechRecognition }).SpeechRecognition
-    delete (window as Window & { webkitSpeechRecognition?: typeof MockSpeechRecognition }).webkitSpeechRecognition
+    MockSpeechRecognition.lastInstance = null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).SpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).webkitSpeechRecognition
   })
 
   it('浏览器不支持时返回错误状态', () => {
@@ -58,7 +60,8 @@ describe('useVoiceInput', () => {
   })
 
   it('初始化 recognition 并处理最终识别文本', () => {
-    ;(window as Window & { SpeechRecognition?: typeof MockSpeechRecognition }).SpeechRecognition = MockSpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).SpeechRecognition = MockSpeechRecognition
     const onFinalText = vi.fn()
 
     const { result, unmount } = renderHook(() =>
@@ -66,20 +69,20 @@ describe('useVoiceInput', () => {
     )
 
     expect(result.current.isSupported).toBe(true)
-    expect(recognitionInstance?.continuous).toBe(true)
-    expect(recognitionInstance?.interimResults).toBe(true)
-    expect(recognitionInstance?.lang).toBe('en-US')
+    expect(MockSpeechRecognition.lastInstance?.continuous).toBe(true)
+    expect(MockSpeechRecognition.lastInstance?.interimResults).toBe(true)
+    expect(MockSpeechRecognition.lastInstance?.lang).toBe('en-US')
 
     act(() => {
-      recognitionInstance?.onstart?.()
-      recognitionInstance?.onresult?.({
+      MockSpeechRecognition.lastInstance?.onstart?.()
+      MockSpeechRecognition.lastInstance?.onresult?.({
         resultIndex: 0,
         results: [
           { 0: { transcript: 'hello ' }, isFinal: false },
           { 0: { transcript: 'world' }, isFinal: true },
         ],
       })
-      recognitionInstance?.onend?.()
+      MockSpeechRecognition.lastInstance?.onend?.()
     })
 
     expect(storeState.startListening).toHaveBeenCalled()
@@ -90,18 +93,19 @@ describe('useVoiceInput', () => {
     expect(storeState.stopListening).toHaveBeenCalled()
 
     unmount()
-    expect(recognitionInstance?.abort).toHaveBeenCalled()
+    expect(MockSpeechRecognition.lastInstance?.abort).toHaveBeenCalled()
   })
 
   it('将识别错误映射为友好文案', () => {
-    ;(window as Window & { SpeechRecognition?: typeof MockSpeechRecognition }).SpeechRecognition = MockSpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).SpeechRecognition = MockSpeechRecognition
     renderHook(() => useVoiceInput())
 
     act(() => {
-      recognitionInstance?.onerror?.({ error: 'audio-capture' })
-      recognitionInstance?.onerror?.({ error: 'not-allowed' })
-      recognitionInstance?.onerror?.({ error: 'network' })
-      recognitionInstance?.onerror?.({ error: 'something-else' })
+      MockSpeechRecognition.lastInstance?.onerror?.({ error: 'audio-capture' })
+      MockSpeechRecognition.lastInstance?.onerror?.({ error: 'not-allowed' })
+      MockSpeechRecognition.lastInstance?.onerror?.({ error: 'network' })
+      MockSpeechRecognition.lastInstance?.onerror?.({ error: 'something-else' })
     })
 
     expect(storeState.setError).toHaveBeenCalledWith('无法访问麦克风')
@@ -112,13 +116,14 @@ describe('useVoiceInput', () => {
   })
 
   it('start/stop 只在合适状态下调用 recognition', () => {
-    ;(window as Window & { SpeechRecognition?: typeof MockSpeechRecognition }).SpeechRecognition = MockSpeechRecognition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).SpeechRecognition = MockSpeechRecognition
     const { result, rerender } = renderHook(() => useVoiceInput())
 
     act(() => {
       result.current.start()
     })
-    expect(recognitionInstance?.start).toHaveBeenCalled()
+    expect(MockSpeechRecognition.lastInstance?.start).toHaveBeenCalled()
 
     storeState.isListening = true
     rerender()
@@ -127,7 +132,7 @@ describe('useVoiceInput', () => {
       result.current.start()
     })
 
-    expect(recognitionInstance?.stop).toHaveBeenCalled()
-    expect(recognitionInstance?.start).toHaveBeenCalledTimes(1)
+    expect(MockSpeechRecognition.lastInstance?.stop).toHaveBeenCalled()
+    expect(MockSpeechRecognition.lastInstance?.start).toHaveBeenCalledTimes(1)
   })
 })

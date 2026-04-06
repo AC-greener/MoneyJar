@@ -16,8 +16,9 @@ app.use(requestId());
 app.use(createLoggerMiddleware());
 
 // 全局 CORS 配置
+// 生产环境走同域访问，无需跨域白名单；仅保留本地开发域名用于本地分域联调
 app.use(cors({
-  origin: ["https://moneyjar-frontend.pages.dev", "http://localhost:5173", "http://localhost:3000"],
+  origin: ["http://localhost:5173"],
   allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowHeaders: ["Authorization", "Content-Type", "Accept"],
 }));
