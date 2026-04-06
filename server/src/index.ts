@@ -15,6 +15,13 @@ app.use(requestId());
 // 注册日志中间件
 app.use(createLoggerMiddleware());
 
+// 全局 CORS 配置
+app.use(cors({
+  origin: ["https://moneyjar-frontend.pages.dev", "http://localhost:5173", "http://localhost:3000"],
+  allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowHeaders: ["Authorization", "Content-Type", "Accept"],
+}));
+
 app.use(
   "/api/mcp",
   cors({

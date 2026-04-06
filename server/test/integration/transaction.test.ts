@@ -222,8 +222,9 @@ describe('GET /api/transactions', () => {
     const json = await res.json();
     expect(json).toHaveProperty('income');
     expect(json).toHaveProperty('expense');
-    expect(json).toHaveProperty('balance');
-    expect(json).toHaveProperty('count');
+    expect(json).toHaveProperty('total');
+    expect(json).toHaveProperty('transactions');
+    expect(json).toHaveProperty('byCategory');
   });
 
   it('should return monthly summary with period=month', async () => {
@@ -236,8 +237,9 @@ describe('GET /api/transactions', () => {
     const json = await res.json();
     expect(json).toHaveProperty('income');
     expect(json).toHaveProperty('expense');
-    expect(json).toHaveProperty('balance');
-    expect(json).toHaveProperty('count');
+    expect(json).toHaveProperty('total');
+    expect(json).toHaveProperty('transactions');
+    expect(json).toHaveProperty('byCategory');
   });
 });
 

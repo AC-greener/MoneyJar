@@ -56,9 +56,13 @@ async function handleList(c: Context) {
 
   let data;
   if (query.period === 'week') {
-    data = userId ? await service.getWeeklyTotalByUser(userId) : await service.getWeeklyTotal();
+    data = userId
+      ? await service.getSummaryByUser(userId, 'week')
+      : await service.getWeeklyTotal();
   } else if (query.period === 'month') {
-    data = userId ? await service.getMonthlyTotalByUser(userId) : await service.getMonthlyTotal();
+    data = userId
+      ? await service.getSummaryByUser(userId, 'month')
+      : await service.getMonthlyTotal();
   } else {
     data = userId && plan
       ? await service.listByUser(userId, plan)

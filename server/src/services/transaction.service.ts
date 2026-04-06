@@ -136,6 +136,32 @@ export class TransactionService {
     return this.calculateTotals(transactions);
   }
 
+  /**
+   * 按用户过滤的完整汇总（含 transactions 和 byCategory，用于图表渲染）
+   */
+  async getSummaryByUser(userId: string, period: 'week' | 'month') {
+    const { start, end } = period === 'week' ? getWeekBounds() : getMonthBounds();
+    const transactions = await this.repo.getByPeriodAndUserId(userId, start, end);
+
+    const { income, expense } = this.calculateTotals(transactions);
+
+    // 按分类聚合支出
+    const byCategory: Record<string, number> = {};
+    for (const t of transactions) {
+      if (t.type === 'expense') {
+        byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+      }
+    }
+
+    return {
+      income,
+      expense,
+      total: income - expense,
+      transactions,
+      byCategory,
+    };
+  }
+
   async getBalanceReport(period: 'week' | 'month') {
     if (period === 'week') {
       return this.getWeeklyTotal();

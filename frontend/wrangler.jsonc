@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "moneyjar-frontend",
+  "compatibility_date": "2026-03-23",
+  "pages": {
+    "build_output_dir": "./dist"
+  }
+}
