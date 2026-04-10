@@ -42,12 +42,12 @@ authRoute.get('/google/start', async (c) => {
   const service = new AuthService(db);
 
   try {
-    const clientId = c.env.OAUTH_GOOGLE_CLIENT_ID;
+    const clientId = c.env.GOOGLE_CLIENT_ID;
     const redirectUri = c.env.GOOGLE_REDIRECT_URI;
     console.log('OAuth start env check:', { clientId: clientId ? 'SET' : 'EMPTY', redirectUri });
 
     if (!clientId) {
-      console.error('OAUTH_GOOGLE_CLIENT_ID is not set');
+      console.error('GOOGLE_CLIENT_ID is not set');
       return c.json({ error: 'OAuth 配置错误：缺少 client_id' }, 500);
     }
 
@@ -92,7 +92,7 @@ authRoute.get('/google/callback', async (c) => {
       code,
       state,
       c.env.JWT_SECRET,
-      c.env.OAUTH_GOOGLE_CLIENT_ID || '',
+      c.env.GOOGLE_CLIENT_ID || '',
       c.env.GOOGLE_CLIENT_SECRET || '',
       c.env.GOOGLE_REDIRECT_URI || '',
     );
@@ -178,7 +178,7 @@ authRoute.post('/google', async (c) => {
     const result = await service.loginWithGoogle(
       parsed.data.id_token,
       c.env.JWT_SECRET,
-      c.env.OAUTH_GOOGLE_CLIENT_ID || '',
+      c.env.GOOGLE_CLIENT_ID || '',
     );
 
     return c.json(
