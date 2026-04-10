@@ -13,6 +13,7 @@ interface AuthState {
   initialize: () => Promise<void>
   loginWithTestToken: () => Promise<void>
   loginWithGoogle: (idToken: string) => Promise<void>
+  completeOAuthLogin: (exchangeCode: string) => Promise<void>
   logout: () => Promise<void>
   fetchCurrentUser: () => Promise<void>
   clearError: () => void
@@ -83,6 +84,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null })
     try {
       const data = await authApi.googleLogin(idToken)
+      set({ user: data.user, isAuthenticated: true, isLoading: false })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '登录失败'
+      set({ error: message, isLoading: false })
+      throw err
+    }
+  },
+
+  completeOAuthLogin: async (exchangeCode: string) => {
+    set({ isLoading: true, error: null })
+    try {
+      const data = await authApi.exchangeOAuthCode(exchangeCode)
       set({ user: data.user, isAuthenticated: true, isLoading: false })
     } catch (err) {
       const message = err instanceof Error ? err.message : '登录失败'

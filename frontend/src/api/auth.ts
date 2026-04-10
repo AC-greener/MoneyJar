@@ -1,5 +1,5 @@
 import apiClient, { setAccessToken, setRefreshToken } from './client'
-import type { AuthResponse, User } from '@/types/api'
+import type { AuthResponse, User, ExchangeCodeRequest } from '@/types/api'
 
 const TEST_TOKEN = import.meta.env.VITE_TEST_TOKEN
 
@@ -65,5 +65,18 @@ export const authApi = {
     }
     setAccessToken(null)
     setRefreshToken(null)
+  },
+
+  /**
+   * 使用一次性 exchange code 换取正式登录凭据
+   * 用于 OAuth callback 流程
+   */
+  async exchangeOAuthCode(code: string): Promise<AuthResponse> {
+    const body: ExchangeCodeRequest = { code }
+    const response = await apiClient.post<AuthResponse>('/api/auth/exchange', body)
+    const data = response.data
+    setAccessToken(data.access_token)
+    setRefreshToken(data.refresh_token)
+    return data
   },
 }

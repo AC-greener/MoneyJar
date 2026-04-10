@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 const RecordPage = lazy(() => import('@/pages/RecordPage'))
 const StatsPage = lazy(() => import('@/pages/StatsPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const CallbackPage = lazy(() => import('@/pages/CallbackPage'))
 
 function PageLoader() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route path="/record" element={<RecordPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/auth/callback" element={<CallbackPage />} />
           </Routes>
         </Suspense>
         <BottomNav />
