@@ -72,17 +72,17 @@ description: "Task list for Google OAuth Login implementation"
 
 ### 实现
 
-- [ ] T016 [P] [US1] 实现 `createOAuthState(returnTo)` 生成 state 并存储
-- [ ] T017 [P] [US1] 实现 `validateAndConsumeState(state)` 校验并标记 state 已使用
-- [ ] T018 [US1] 实现 Google token endpoint 交换 (`/oauth/token`)
-- [ ] T019 [US1] 实现 `upsertUserFromGoogle(googleUser)` 用户创建/更新
-- [ ] T020 [US1] 实现 `createExchangeToken(userId, tokens)` 生成一次性 exchange code
-- [ ] T021 [US1] 实现 Open Redirect 防护 (`return_to` 只允许相对路径)
+- [x] T016 [P] [US1] 实现 `createOAuthState(returnTo)` 生成 state 并存储
+- [x] T017 [P] [US1] 实现 `validateAndConsumeState(state)` 校验并标记 state 已使用
+- [x] T018 [US1] 实现 Google token endpoint 交换 (`/oauth/token`)
+- [x] T019 [US1] 实现 `upsertUserFromGoogle(googleUser)` 用户创建/更新
+- [x] T020 [US1] 实现 `createExchangeToken(userId, tokens)` 生成一次性 exchange code
+- [x] T021 [US1] 实现 Open Redirect 防护 (`return_to` 只允许相对路径)
 
 ### 集成
 
-- [ ] T022 [US1] 在 `server/src/routes/auth.route.ts` 连接 start → callback → exchange 全流程
-- [ ] T023 [US1] 添加服务端错误处理和日志记录
+- [x] T022 [US1] 在 `server/src/routes/auth.route.ts` 连接 start → callback → exchange 全流程
+- [x] T023 [US1] 添加服务端错误处理和日志记录
 
 ---
 
