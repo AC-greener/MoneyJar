@@ -6,8 +6,7 @@ import { RefreshTokenRepository } from '../repositories/refresh-token.repository
 import { OAuthStateRepository, LoginExchangeTokenRepository } from '../repositories/oauth.repository';
 import { JwtPayloadSchema, type JwtPayload } from '../types/auth';
 
-// Google OAuth 配置
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // 运行时从环境变量获取
+// Google OAuth 配置（仅用于 token 交换和用户信息获取，client_id 通过参数传入）
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v2/userinfo';
 const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
@@ -61,6 +60,12 @@ export async function exchangeGoogleCode(
   googleClientSecret: string,
   googleRedirectUri: string,
 ): Promise<{ access_token: string; id_token: string; refresh_token?: string } | null> {
+  console.log('[OAuth] Token exchange params:', {
+    code: code ? `${code.slice(0, 20)}...` : 'null',
+    clientId: googleClientId,
+    redirectUri: googleRedirectUri,
+  });
+
   try {
     const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
       method: 'POST',
@@ -76,9 +81,11 @@ export async function exchangeGoogleCode(
       }),
     });
 
+    console.log('[OAuth] Token exchange response status:', response.status);
+
     if (!response.ok) {
       const error = await response.text();
-      console.error('Google token exchange failed:', error);
+      console.error('[OAuth] Token exchange failed:', response.status, error);
       return null;
     }
 
@@ -87,13 +94,14 @@ export async function exchangeGoogleCode(
       id_token: string;
       refresh_token?: string;
     };
+    console.log('[OAuth] Token exchange success');
     return {
       access_token: data.access_token,
       id_token: data.id_token,
       refresh_token: data.refresh_token,
     };
   } catch (err) {
-    console.error('Google token exchange error:', err);
+    console.error('[OAuth] Token exchange error:', err);
     return null;
   }
 }
@@ -183,7 +191,11 @@ export class AuthService {
    * 1. 生成 state 并存储
    * 2. 返回 Google 授权 URL
    */
-  async startOAuth(returnTo: string = '/') {
+  async startOAuth(
+    returnTo: string = '/',
+    googleClientId: string,
+    googleRedirectUri: string,
+  ) {
     // 验证 return_to 是安全路径（只允许相对路径）
     if (!this.isSafeReturnTo(returnTo)) {
       returnTo = '/';
@@ -192,7 +204,7 @@ export class AuthService {
     const { state, record } = await this.oauthStateRepo.create(returnTo);
 
     // 构建 Google 授权 URL
-    const googleAuthUrl = this.buildGoogleAuthUrl(state);
+    const googleAuthUrl = this.buildGoogleAuthUrl(state, googleClientId, googleRedirectUri);
 
     return {
       state,
@@ -219,11 +231,15 @@ export class AuthService {
     googleClientSecret: string,
     googleRedirectUri: string,
   ) {
+    console.log('[OAuth] handleGoogleCallback called, state:', state ? `${state.slice(0, 20)}...` : 'null');
+
     // 第一步：校验 state
     const stateRecord = await this.oauthStateRepo.findValidByState(state);
     if (!stateRecord) {
+      console.error('[OAuth] Invalid or expired state');
       throw new Error('INVALID_STATE');
     }
+    console.log('[OAuth] State validated, returnTo:', stateRecord.returnTo);
 
     // 第二步：使用 code 向 Google 换取 token
     const tokenData = await exchangeGoogleCode(
@@ -233,14 +249,17 @@ export class AuthService {
       googleRedirectUri,
     );
     if (!tokenData) {
+      console.error('[OAuth] Token exchange returned null');
       throw new Error('GOOGLE_TOKEN_EXCHANGE_FAILED');
     }
 
     // 第三步：验证 Google ID token（生产级验签）
     const googlePayload = await verifyGoogleIdToken(tokenData.id_token, googleClientId);
     if (!googlePayload) {
+      console.error('[OAuth] Google ID token verification failed');
       throw new Error('INVALID_GOOGLE_TOKEN');
     }
+    console.log('[OAuth] Google token verified, email:', googlePayload.email);
 
     // 第四步：Upsert 用户
     const user = await this.userRepo.upsertByGoogleId({
@@ -422,10 +441,13 @@ export class AuthService {
   /**
    * 构建 Google 授权 URL
    */
-  private buildGoogleAuthUrl(state: string): string {
+  private buildGoogleAuthUrl(state: string, googleClientId: string, googleRedirectUri: string): string {
+    // 从 googleRedirectUri 提取基础 URL
+    const baseUrl = googleRedirectUri.replace('/api/auth/google/callback', '');
+
     const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: `${this.getBaseUrl()}/api/auth/google/callback`,
+      client_id: googleClientId,
+      redirect_uri: `${baseUrl}/api/auth/google/callback`,
       response_type: 'code',
       scope: 'openid email profile',
       state,
@@ -434,15 +456,6 @@ export class AuthService {
     });
 
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  }
-
-  /**
-   * 获取基础 URL（用于构建 callback URL）
-   * 实际运行时从环境变量获取
-   */
-  private getBaseUrl(): string {
-    // 实际部署时从环境变量获取
-    return process.env.GOOGLE_REDIRECT_URI?.replace('/api/auth/google/callback', '') || 'https://moneyjar.app';
   }
 
   /**

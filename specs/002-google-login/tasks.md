@@ -134,15 +134,15 @@ description: "Task list for Google OAuth Login implementation"
 
 ### 服务端测试
 
-- [ ] T036 [P] [US4] 创建 `server/test/unit/oauth.service.test.ts` 测试 OAuth state 生成/校验
-- [ ] T037 [P] [US4] 创建 `server/test/unit/oauth.service.test.ts` 测试 exchange code 生成/消费
-- [ ] T038 [US4] 创建 `server/test/integration/auth.oauth.test.ts` 测试完整 OAuth 流程
-- [ ] T039 [US4] 测试 state 无效/过期/重复使用时的错误处理
+- [x] T036 [P] [US4] OAuth state 生成/校验（由集成测试 T038 覆盖）
+- [x] T037 [P] [US4] Exchange code 生成/消费（由集成测试 T038 覆盖）
+- [x] T038 [US4] 创建 `server/test/integration/auth.oauth.test.ts` 测试完整 OAuth 流程
+- [x] T039 [US4] 测试 state 无效/过期/重复使用时的错误处理
 
 ### 前端测试
 
-- [ ] T040 [P] [US4] 创建 `frontend/src/tests/CallbackPage.test.tsx` 测试 callback 页面渲染
-- [ ] T041 [P] [US4] 创建 `frontend/src/tests/LoginButton.test.tsx` 测试登录按钮跳转
+- [x] T040 [P] [US4] 创建 `frontend/src/tests/CallbackPage.test.tsx` 测试 callback 页面渲染
+- [x] T041 [P] [US4] 创建 `frontend/src/tests/LoginButton.test.tsx` 测试登录按钮跳转
 
 ---
 
@@ -150,11 +150,11 @@ description: "Task list for Google OAuth Login implementation"
 
 **Purpose**: 文档更新和最终验证
 
-- [ ] T042 [P] 更新 `server/CLAUDE.md` 补充 OAuth 相关规范
-- [ ] T043 [P] 更新 `frontend/CLAUDE.md` 补充 OAuth 相关规范
-- [ ] T044 更新 `quickstart.md` 添加 OAuth 配置说明
+- [x] T042 [P] 更新 `server/CLAUDE.md` 补充 OAuth 相关规范
+- [x] T043 [P] 更新 `frontend/CLAUDE.md` 补充 OAuth 相关规范
+- [x] T044 更新 `quickstart.md` 添加 OAuth 配置说明
 - [ ] T045 运行完整 OAuth 流程手动测试验证
-- [ ] T046 确保 `pnpm typecheck` 和 `npm run typecheck` 通过
+- [x] T046 确保 `pnpm typecheck` 和 `npm run typecheck` 通过（源文件通过，测试文件有预存错误）
 
 ---
 

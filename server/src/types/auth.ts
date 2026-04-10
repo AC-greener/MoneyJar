@@ -17,7 +17,7 @@ export const GoogleLoginRequestSchema = z.object({
 
 // 登录成功响应结构（包含 access token、refresh token 及用户基本信息）
 export const LoginResponseSchema = z.object({
-  access_token: z.string(),      // 短效 JWT，用于 API 鉴权（1 小时有效期）
+  access_token: z.string(),      // 短效 JWT，用于 API 鉴权（15 分钟有效期）
   refresh_token: z.string(),     // 长效令牌，用于换取新 access token（30 天有效期）
   user: PublicUserSchema,        // 公开用户信息（id/email/name/avatarUrl/plan）
 });

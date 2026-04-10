@@ -45,6 +45,24 @@ npm run typecheck        # TypeScript 类型检查
 - 样式使用 Tailwind CSS
 - 表单使用 React Hook Form + Zod
 
+## OAuth 登录
+
+**登录流程**：
+1. 用户点击 LoginButton → 跳转 `/api/auth/google/start?return_to=当前路径`
+2. Google 授权后回调 `/auth/callback?exchange_code=xxx`
+3. CallbackPage 用 code 兑换 tokens
+4. 登录成功，跳转到 `return_to` 路径
+
+**相关文件**：
+- `src/components/common/LoginButton.tsx` - Google 登录按钮
+- `src/pages/CallbackPage.tsx` - OAuth 回调页面
+- `src/stores/authStore.ts` - `completeOAuthLogin()` 方法
+- `src/api/auth.ts` - `exchangeOAuthCode()` API
+
+**环境变量**：
+- `VITE_API_BASE_URL` - API 服务地址
+
 ## 近期变更
 
 - 001-voice-expense-tracking: 添加语音记账功能集成
+- 002-google-login: 添加 Google OAuth 登录功能

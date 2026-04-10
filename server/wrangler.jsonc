@@ -21,7 +21,6 @@
   ],
   // Google OAuth 配置
   "vars": {
-    "GOOGLE_CLIENT_ID": "",
     "GOOGLE_REDIRECT_URI": "http://localhost:8787/api/auth/google/callback"
   },
   // "compatibility_flags": [
@@ -57,7 +56,9 @@
         }
       ],
       "vars": {
-        "ENVIRONMENT": "staging"
+        "ENVIRONMENT": "staging",
+        "GOOGLE_REDIRECT_URI": "https://staging.moneyjar.zhutongtong.cn/api/auth/google/callback",
+        "APP_BASE_URL": "https://staging.moneyjar.zhutongtong.cn"
       }
     },
   }

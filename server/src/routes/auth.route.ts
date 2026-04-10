@@ -42,7 +42,20 @@ authRoute.get('/google/start', async (c) => {
   const service = new AuthService(db);
 
   try {
-    const { redirectUrl } = await service.startOAuth(returnTo);
+    const clientId = c.env.OAUTH_GOOGLE_CLIENT_ID;
+    const redirectUri = c.env.GOOGLE_REDIRECT_URI;
+    console.log('OAuth start env check:', { clientId: clientId ? 'SET' : 'EMPTY', redirectUri });
+
+    if (!clientId) {
+      console.error('OAUTH_GOOGLE_CLIENT_ID is not set');
+      return c.json({ error: 'OAuth 配置错误：缺少 client_id' }, 500);
+    }
+
+    const { redirectUrl } = await service.startOAuth(
+      returnTo,
+      clientId,
+      redirectUri || '',
+    );
 
     // 302 重定向到 Google 授权页
     return c.redirect(redirectUrl, 302);
@@ -64,7 +77,7 @@ authRoute.get('/google/callback', async (c) => {
   if (error) {
     console.error('Google OAuth error:', error);
     // 跳转到前端 callback 页面并携带错误码
-    return c.redirect(`/auth/callback?error=${encodeURIComponent(error)}`, 302);
+    return c.redirect(`${c.env.APP_BASE_URL}/auth/callback?error=${encodeURIComponent(error)}`, 302);
   }
 
   if (!code || !state) {
@@ -79,13 +92,13 @@ authRoute.get('/google/callback', async (c) => {
       code,
       state,
       c.env.JWT_SECRET,
-      c.env.GOOGLE_CLIENT_ID || '',
+      c.env.OAUTH_GOOGLE_CLIENT_ID || '',
       c.env.GOOGLE_CLIENT_SECRET || '',
       c.env.GOOGLE_REDIRECT_URI || '',
     );
 
     // 跳转到前端 callback 页面并携带 exchange code
-    const callbackUrl = `/auth/callback?exchange_code=${encodeURIComponent(result.exchangeCode)}&return_to=${encodeURIComponent(result.returnTo)}`;
+    const callbackUrl = `${c.env.APP_BASE_URL}/auth/callback?exchange_code=${encodeURIComponent(result.exchangeCode)}&return_to=${encodeURIComponent(result.returnTo)}`;
     return c.redirect(callbackUrl, 302);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
@@ -101,7 +114,7 @@ authRoute.get('/google/callback', async (c) => {
       errorCode = 'invalid_google_token';
     }
 
-    return c.redirect(`/auth/callback?error=${encodeURIComponent(errorCode)}`, 302);
+    return c.redirect(`${c.env.APP_BASE_URL}/auth/callback?error=${encodeURIComponent(errorCode)}`, 302);
   }
 });
 
@@ -165,7 +178,7 @@ authRoute.post('/google', async (c) => {
     const result = await service.loginWithGoogle(
       parsed.data.id_token,
       c.env.JWT_SECRET,
-      c.env.GOOGLE_CLIENT_ID || '',
+      c.env.OAUTH_GOOGLE_CLIENT_ID || '',
     );
 
     return c.json(
