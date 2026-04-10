@@ -61,5 +61,21 @@
         "APP_BASE_URL": "https://staging.moneyjar.zhutongtong.cn"
       }
     },
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "remote": true,
+          "database_name": "moneyjar",
+          "database_id": "f0bd5e6d-80d6-408c-8a5d-b4f1c689b522",
+          "migrations_dir": "drizzle"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "GOOGLE_REDIRECT_URI": "https://moneyjar.zhutongtong.cn/api/auth/google/callback",
+        "APP_BASE_URL": "https://moneyjar.zhutongtong.cn"
+      }
+    },
   }
 }
