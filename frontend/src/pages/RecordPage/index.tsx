@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { ExpenseInput } from '@/components/expense/ExpenseInput'
 import { TransactionList } from '@/components/transaction/TransactionList'
+import { LoginButton } from '@/components/common/LoginButton'
 import { useAuthStore } from '@/stores/authStore'
 import { useTransactionStore } from '@/stores/transactionStore'
 
@@ -53,6 +54,9 @@ export default function RecordPage() {
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">欢迎使用 MoneyJar</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">登录后即可开始语音记账，智能识别金额和分类</p>
+            <div className="mb-6">
+              <LoginButton />
+            </div>
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

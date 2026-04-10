@@ -94,20 +94,20 @@ description: "Task list for Google OAuth Login implementation"
 
 ### 前端 - Callback 页面
 
-- [ ] T024 [P] [US2] 创建 `frontend/src/pages/CallbackPage.tsx` 页面组件
-- [ ] T025 [P] [US2] 在 `frontend/src/App.tsx` 添加路由 `/auth/callback`
-- [ ] T026 [US2] 实现 exchange code 解析和错误处理
-- [ ] T027 [US2] 实现登录成功后跳转到 `return_to` 或默认 `/record`
+- [x] T024 [P] [US2] 创建 `frontend/src/pages/CallbackPage.tsx` 页面组件
+- [x] T025 [P] [US2] 在 `frontend/src/App.tsx` 添加路由 `/auth/callback`
+- [x] T026 [US2] 实现 exchange code 解析和错误处理
+- [x] T027 [US2] 实现登录成功后跳转到 `return_to` 或默认 `/record`
 
 ### 前端 - Auth API 扩展
 
-- [ ] T028 [P] [US2] 在 `frontend/src/api/auth.ts` 新增 `exchangeOAuthCode(code)` 方法
-- [ ] T029 [P] [US2] 在 `frontend/src/types/api.ts` 新增 `ExchangeCodeRequest` 类型
+- [x] T028 [P] [US2] 在 `frontend/src/api/auth.ts` 新增 `exchangeOAuthCode(code)` 方法
+- [x] T029 [P] [US2] 在 `frontend/src/types/api.ts` 新增 `ExchangeCodeRequest` 类型
 
 ### 前端 - Auth Store 调整
 
-- [ ] T030 [US2] 在 `frontend/src/stores/authStore.ts` 新增 `completeOAuthLogin(exchangeCode)` action
-- [ ] T031 [US2] 更新 `initialize()` 支持 callback 后会话恢复
+- [x] T030 [US2] 在 `frontend/src/stores/authStore.ts` 新增 `completeOAuthLogin(exchangeCode)` action
+- [x] T031 [US2] 更新 `initialize()` 支持 callback 后会话恢复
 
 ---
 
@@ -119,10 +119,10 @@ description: "Task list for Google OAuth Login implementation"
 
 ### 前端 - 登录入口
 
-- [ ] T032 [P] [US3] 找到前端未登录态占位组件位置
-- [ ] T033 [P] [US3] 创建 `frontend/src/components/LoginButton.tsx` 登录按钮组件
-- [ ] T034 [US3] 替换所有未登录页面的占位为真实登录按钮
-- [ ] T035 [US3] 按钮点击跳转到 `${VITE_API_BASE_URL}/api/auth/google/start?return_to=当前路径`
+- [x] T032 [P] [US3] 找到前端未登录态占位组件位置
+- [x] T033 [P] [US3] 创建 `frontend/src/components/LoginButton.tsx` 登录按钮组件
+- [x] T034 [US3] 替换所有未登录页面的占位为真实登录按钮
+- [x] T035 [US3] 按钮点击跳转到 `${VITE_API_BASE_URL}/api/auth/google/start?return_to=当前路径`
 
 ---
 

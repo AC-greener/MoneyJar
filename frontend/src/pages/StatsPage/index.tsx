@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CategoryPieChart } from '@/components/charts/CategoryPieChart'
 import { TrendLineChart } from '@/components/charts/TrendLineChart'
+import { LoginButton } from '@/components/common/LoginButton'
 import { useAuthStore } from '@/stores/authStore'
 import { useTransactionStore } from '@/stores/transactionStore'
 import { formatCurrency } from '@/utils/format'
@@ -40,6 +41,9 @@ export default function StatsPage() {
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">查看您的消费分析</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">登录后自动统计您的收支情况，生成可视化报表</p>
+            <div className="mb-6">
+              <LoginButton />
+            </div>
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
