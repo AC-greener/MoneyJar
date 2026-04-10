@@ -32,8 +32,28 @@ export const LogoutRequestSchema = z.object({
   refresh_token: z.string().min(1),
 });
 
+// Google OAuth 开始授权 - Query 参数
+export const GoogleStartQuerySchema = z.object({
+  return_to: z.string().optional().default('/'), // 登录后跳转地址
+});
+
+// Exchange Code 兑换请求体
+export const ExchangeCodeSchema = z.object({
+  code: z.string().min(1), // 一次性交换码
+});
+
+// Exchange 成功响应结构
+export const ExchangeResponseSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  user: PublicUserSchema,
+});
+
 export type JwtPayload = z.infer<typeof JwtPayloadSchema>;
 export type GoogleLoginRequest = z.infer<typeof GoogleLoginRequestSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 export type LogoutRequest = z.infer<typeof LogoutRequestSchema>;
+export type GoogleStartQuery = z.infer<typeof GoogleStartQuerySchema>;
+export type ExchangeCodeRequest = z.infer<typeof ExchangeCodeSchema>;
+export type ExchangeResponse = z.infer<typeof ExchangeResponseSchema>;

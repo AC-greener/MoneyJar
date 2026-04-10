@@ -19,6 +19,11 @@
       "migrations_dir": "drizzle"
     }
   ],
+  // Google OAuth 配置
+  "vars": {
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_REDIRECT_URI": "http://localhost:8787/api/auth/google/callback"
+  },
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],

@@ -67,6 +67,32 @@ export const apiTokens = sqliteTable('api_tokens', {
   idxToken: uniqueIndex('idx_token').on(table.token),
 }));
 
+// OAuth State 表：存储 Google OAuth 授权流程的 state 参数（10分钟过期，单次使用）
+export const oauthStates = sqliteTable('oauth_states', {
+  id: text('id').primaryKey(), // UUID
+  state: text('state').notNull(), // 随机 state 值，用于防止 CSRF
+  returnTo: text('return_to').notNull().default('/'), // 登录成功后跳转地址
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: text('expires_at').notNull(), // 10分钟后过期
+  usedAt: text('used_at'), // 已使用时间，NULL = 未使用
+}, (table) => ({
+  idxOauthState: uniqueIndex('idx_oauth_state').on(table.state),
+}));
+
+// Login Exchange Token 表：存储一次性登录交换码（5分钟过期，单次使用）
+export const loginExchangeTokens = sqliteTable('login_exchange_tokens', {
+  id: text('id').primaryKey(), // UUID
+  code: text('code').notNull(), // 一次性交换码
+  userId: text('user_id').notNull().references(() => users.id), // 关联用户
+  accessToken: text('access_token').notNull(), // 短期 JWT
+  refreshToken: text('refresh_token').notNull(), // 长期 token
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: text('expires_at').notNull(), // 5分钟后过期
+  usedAt: text('used_at'), // 已使用时间，NULL = 未使用
+}, (table) => ({
+  idxExchangeCode: uniqueIndex('idx_login_exchange_code').on(table.code),
+}));
+
 // 请求日志表：记录所有 API 请求的元数据，用于监控和调试
 export const requestLogs = sqliteTable('request_logs', {
   id: text('id').primaryKey(),

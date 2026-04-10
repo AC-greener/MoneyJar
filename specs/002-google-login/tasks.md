@@ -24,8 +24,8 @@ description: "Task list for Google OAuth Login implementation"
 
 **Purpose**: 创建 OAuth 状态存储所需的数据库表
 
-- [ ] T001 在 `server/src/db/schema.ts` 新增 `oauthStates` 表定义
-- [ ] T002 在 `server/src/db/schema.ts` 新增 `loginExchangeTokens` 表定义
+- [x] T001 在 `server/src/db/schema.ts` 新增 `oauthStates` 表定义
+- [x] T002 在 `server/src/db/schema.ts` 新增 `loginExchangeTokens` 表定义
 - [ ] T003 运行 `pnpm db:generate` 生成 Drizzle 迁移文件
 - [ ] T004 运行 `pnpm db:push` 推送 Schema 到本地 D1
 
@@ -39,26 +39,26 @@ description: "Task list for Google OAuth Login implementation"
 
 ### 服务端 - OAuth 仓库层
 
-- [ ] T005 [P] 创建 `server/src/repositories/oauth.repository.ts` 实现 OAuth state CRUD
-- [ ] T006 [P] 创建 `server/src/repositories/oauth.repository.ts` 实现 login exchange code CRUD
+- [x] T005 [P] 创建 `server/src/repositories/oauth.repository.ts` 实现 OAuth state CRUD
+- [x] T006 [P] 创建 `server/src/repositories/oauth.repository.ts` 实现 login exchange code CRUD
 
 ### 服务端 - Auth Service 扩展
 
-- [ ] T007 [P] 在 `server/src/services/auth.service.ts` 新增 `startOAuth(returnTo)` 方法
-- [ ] T008 [P] 在 `server/src/services/auth.service.ts` 新增 `handleGoogleCallback(code, state)` 方法
-- [ ] T009 在 `server/src/services/auth.service.ts` 新增 `exchangeCode(code)` 方法
-- [ ] T010 实现 Google ID Token 生产级签名校验 (使用 `jose` 库)
+- [x] T007 [P] 在 `server/src/services/auth.service.ts` 新增 `startOAuth(returnTo)` 方法
+- [x] T008 [P] 在 `server/src/services/auth.service.ts` 新增 `handleGoogleCallback(code, state)` 方法
+- [x] T009 在 `server/src/services/auth.service.ts` 新增 `exchangeCode(code)` 方法
+- [x] T010 实现 Google ID Token 生产级签名校验 (使用 `jose` 库)
 
 ### 服务端 - Auth Types 扩展
 
-- [ ] T011 [P] 在 `server/src/types/auth.ts` 新增 `GoogleStartQuerySchema`
-- [ ] T012 [P] 在 `server/src/types/auth.ts` 新增 `ExchangeCodeSchema`
+- [x] T011 [P] 在 `server/src/types/auth.ts` 新增 `GoogleStartQuerySchema`
+- [x] T012 [P] 在 `server/src/types/auth.ts` 新增 `ExchangeCodeSchema`
 
 ### 服务端 - Auth Routes 扩展
 
-- [ ] T013 在 `server/src/routes/auth.route.ts` 新增 `GET /google/start` 端点
-- [ ] T014 在 `server/src/routes/auth.route.ts` 新增 `GET /google/callback` 端点
-- [ ] T015 在 `server/src/routes/auth.route.ts` 新增 `POST /exchange` 端点
+- [x] T013 在 `server/src/routes/auth.route.ts` 新增 `GET /google/start` 端点
+- [x] T014 在 `server/src/routes/auth.route.ts` 新增 `GET /google/callback` 端点
+- [x] T015 在 `server/src/routes/auth.route.ts` 新增 `POST /exchange` 端点
 
 **Checkpoint**: 服务端 OAuth 流程完整，可通过 curl/浏览器手动测试
 
