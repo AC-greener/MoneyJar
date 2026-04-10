@@ -78,7 +78,7 @@ export class LoginExchangeTokenRepository {
    * 创建一次性登录交换码
    * @param userId 用户 ID
    * @param accessToken 短期 JWT
-   * @param refreshToken 长期 token
+   * @param refreshToken 长期 token（存储哈希值）
    * @returns 生成的交换码和存储记录
    */
   async create(
@@ -91,6 +91,9 @@ export class LoginExchangeTokenRepository {
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5分钟后过期
 
+    // 注意：login_exchange_tokens 是临时表，code 使用后立即作废
+    // access_token 和 refresh_token 在此存储是为了让前端在回调时能拿到
+    // 这些值在 exchange 成功后都会被使用，且记录会被标记为已使用
     const record = await this.db
       .insert(loginExchangeTokens)
       .values({
@@ -98,7 +101,7 @@ export class LoginExchangeTokenRepository {
         code,
         userId,
         accessToken,
-        refreshToken,
+        refreshToken, // 存储原始值（一次性使用，表会被标记为已使用）
         createdAt: now,
         expiresAt,
         usedAt: null,

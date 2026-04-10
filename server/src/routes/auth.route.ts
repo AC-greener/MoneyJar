@@ -15,7 +15,8 @@ import { createUserAuthMiddleware } from '../middlewares/user-auth';
 export const authRoute = new Hono<{ Bindings: CloudflareBindings }>();
 
 function isTestTokenEnabled(env: string) {
-  return env === 'development' || env === 'staging';
+  // 仅在 development 环境下启用，staging 和 production 必须禁用
+  return env === 'development';
 }
 
 function hasValidTestAuth(c: Context<{ Bindings: CloudflareBindings }>) {
@@ -260,7 +261,7 @@ authRoute.post('/refresh', async (c) => {
       parsed.data.refresh_token,
       c.env.JWT_SECRET,
     );
-    return c.json({ access_token: result.accessToken }, 200);
+    return c.json({ access_token: result.accessToken, refresh_token: result.refreshToken }, 200);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
     if (['INVALID_REFRESH_TOKEN', 'TOKEN_REVOKED', 'TOKEN_EXPIRED'].includes(msg)) {
