@@ -3,6 +3,17 @@ import { createExecutionContext, env, applyD1Migrations, type D1Migration } from
 import worker from '../../src/index';
 import { signJwt } from '../../src/services/auth.service';
 
+/**
+ * Token 哈希工具（与 refresh-token.repository.ts 保持一致）
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Inline 建表 SQL
 const CREATE_USERS_TABLE = `CREATE TABLE "users" (
   "id" text PRIMARY KEY NOT NULL,
@@ -61,15 +72,17 @@ beforeAll(async () => {
 describe('POST /api/auth/refresh', () => {
   it('应该用有效的 refresh_token 换取新的 access_token', async () => {
     // 先直接插入测试用户和 refresh token（模拟登录后的状态）
+    // 注意：refresh_tokens 表存储的是 token 的哈希值
     const userId = crypto.randomUUID();
     const refreshToken = 'test-refresh-token-' + Date.now();
+    const refreshTokenHash = await hashToken(refreshToken);
     const futureExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await env.DB.prepare(`INSERT INTO users (id, email, google_id, plan) VALUES (?, ?, ?, 'free')`)
       .bind(userId, `refresh-test-${Date.now()}@test.com`, `google-${Date.now()}`)
       .run();
     await env.DB.prepare(`INSERT INTO refresh_tokens (id, user_id, token, expires_at, revoked) VALUES (?, ?, ?, ?, 0)`)
-      .bind(crypto.randomUUID(), userId, refreshToken, futureExpiry)
+      .bind(crypto.randomUUID(), userId, refreshTokenHash, futureExpiry)
       .run();
 
     const ctx = createExecutionContext();
@@ -206,7 +219,9 @@ describe('POST /api/auth/test-token', () => {
     const storedToken = await env.DB.prepare(`SELECT token, revoked FROM refresh_tokens WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`)
       .bind(json.user.id)
       .first<{ token: string; revoked: number }>();
-    expect(storedToken?.token).toBe(json.refresh_token);
+    // refresh_tokens 表存储的是 token 的哈希值
+    const refreshTokenHash = await hashToken(json.refresh_token);
+    expect(storedToken?.token).toBe(refreshTokenHash);
     expect(storedToken?.revoked).toBe(0);
   });
 

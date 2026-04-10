@@ -394,7 +394,10 @@ export class AuthService {
   }
 
   /**
-   * 使用 Refresh Token 换取新的 Access Token
+   * 使用 Refresh Token 换取新的 Access Token（实现 token 轮换）
+   * - 吊销旧的 refresh token
+   * - 签发新的 refresh token
+   * - 返回新的 access token 和 refresh token
    */
   async refreshAccessToken(refreshToken: string, jwtSecret: string) {
     // 查找 refresh token 记录
@@ -411,13 +414,21 @@ export class AuthService {
     const user = await this.userRepo.findById(tokenRecord.userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
+    // 吊销旧的 refresh token（实现轮换，防止 replay 攻击）
+    await this.refreshTokenRepo.revoke(refreshToken);
+
     // 签发新的 Access Token
     const accessToken = await signJwt(
       { sub: user.id, email: user.email, plan: user.plan },
       jwtSecret,
     );
 
-    return { accessToken, user };
+    // 签发新的 Refresh Token（30 天过期）
+    const newRefreshToken = crypto.randomUUID();
+    const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await this.refreshTokenRepo.create(user.id, newRefreshToken, refreshExpiresAt);
+
+    return { accessToken, refreshToken: newRefreshToken, user };
   }
 
   /**
