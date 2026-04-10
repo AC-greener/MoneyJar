@@ -45,7 +45,9 @@ app
 
 // 开发模式调试路由：无需 Google OAuth，直接获取测试 JWT（仅 development 环境可用）
 app.get('/api/dev/token', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  // 仅在非生产环境启用
+  const isProduction = c.env.ENVIRONMENT === 'staging';
+  if (isProduction) {
     return c.json({ error: 'Not found' }, 404);
   }
   const plan = c.req.query('plan') === 'pro' ? 'pro' : 'free';

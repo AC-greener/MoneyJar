@@ -19,6 +19,11 @@
       "migrations_dir": "drizzle"
     }
   ],
+  // Google OAuth 配置
+  "vars": {
+    "GOOGLE_REDIRECT_URI": "https://moneyjar.zhutongtong.cn/api/auth/google/callback",
+    "APP_BASE_URL": "https://moneyjar.zhutongtong.cn"
+  },
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
@@ -52,7 +57,9 @@
         }
       ],
       "vars": {
-        "ENVIRONMENT": "staging"
+        "ENVIRONMENT": "staging",
+        "GOOGLE_REDIRECT_URI": "https://staging.moneyjar.zhutongtong.cn/api/auth/google/callback",
+        "APP_BASE_URL": "https://staging.moneyjar.zhutongtong.cn"
       }
     },
   }

@@ -83,6 +83,29 @@ return c.json({ error: parsed.error.issues }, 400);
 - 所有新功能必须包含测试，禁止提交无测试覆盖的代码
 - 完成任务前必须：1. `pnpm typecheck` 2. 相关测试 3. lint/format 检查
 
+## OAuth 认证（Google OAuth 2.0）
+
+**新增表**：
+- `oauth_states`：OAuth 流程 state 管理（10分钟过期，一次性使用）
+- `login_exchange_tokens`：登录交换码（5分钟过期，一次性使用）
+
+**端点**：
+| 端点 | 说明 |
+|------|------|
+| `GET /api/auth/google/start` | 开始 OAuth 流程，重定向到 Google |
+| `GET /api/auth/google/callback` | 处理 Google 回调，兑换 code |
+| `POST /api/auth/exchange` | 前端用 exchange code 兑换 tokens |
+
+**安全特性**：
+- State 参数防 CSRF（10分钟有效期）
+- Exchange code 一次性使用（5分钟有效期）
+- Open Redirect 防护（return_to 仅允许相对路径）
+
+**相关文件**：
+- `src/repositories/oauth.repository.ts` - OAuth 状态和 exchange code CRUD
+- `src/services/auth.service.ts` - OAuth 核心逻辑
+- `src/routes/auth.route.ts` - OAuth 路由
+
 ## 规划功能（避免架构冲突）
 
 **Vectorize 向量数据库**（尚未实现）：

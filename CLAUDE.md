@@ -80,3 +80,10 @@ cd frontend && npm run dev   # 开发服务器
 - 服务端详细规范：`server/CLAUDE.md`
 - 前端详细规范：`frontend/CLAUDE.md`
 - 数据库操作：`docs/DATABASE.md`
+
+## Active Technologies
+- TypeScript 5.x (服务端), React 19 (前端) | Kotlin (Android - 不在此功能范围) + Hono.js, Drizzle ORM, Zod, jose, Cloudflare Workers, Vitest, React Router v7 (002-google-login)
+- Cloudflare D1 (SQLite) - 新增 `oauth_states`、`login_exchange_tokens` 表 (002-google-login)
+
+## Recent Changes
+- 002-google-login: Added TypeScript 5.x (服务端), React 19 (前端) | Kotlin (Android - 不在此功能范围) + Hono.js, Drizzle ORM, Zod, jose, Cloudflare Workers, Vitest, React Router v7

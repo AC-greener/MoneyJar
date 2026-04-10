@@ -86,6 +86,10 @@ export interface RefreshTokenResponse {
   access_token: string
 }
 
+export interface ExchangeCodeRequest {
+  code: string
+}
+
 export interface ApiError {
   error: string
   requestId?: string
