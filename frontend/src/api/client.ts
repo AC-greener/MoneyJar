@@ -124,5 +124,5 @@ apiClient.interceptors.response.use(
 )
 
 // Export helpers and client
-export { setAccessToken, setRefreshToken, getAccessToken, getRefreshToken }
+export { setAccessToken, setRefreshToken, getAccessToken, getRefreshToken, refreshAccessToken }
 export default apiClient
