@@ -7,7 +7,7 @@ export function LoginButton() {
   const handleLogin = () => {
     // 构建 return_to 参数为当前页面路径
     const returnTo = encodeURIComponent(window.location.pathname + window.location.search)
-    const loginUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google/start?return_to=${returnTo}`
+    const loginUrl = `/api/auth/google/start?return_to=${returnTo}`
     window.location.href = loginUrl
   }
 

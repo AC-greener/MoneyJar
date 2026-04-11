@@ -54,7 +54,7 @@ export default function CallbackPage() {
     setLocalError(null)
     // 跳转到 Google 登录起点
     const returnTo = encodeURIComponent(window.location.pathname)
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google/start?return_to=${returnTo}`
+    window.location.href = `/api/auth/google/start?return_to=${returnTo}`
   }
 
   // 显示加载状态
