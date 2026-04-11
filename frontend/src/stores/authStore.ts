@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { User } from '@/types/api'
 import { authApi } from '@/api/auth'
+import { apiClient, refreshAccessToken } from '@/api/client'
 
 interface AuthState {
   user: User | null
@@ -50,11 +51,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     const refreshToken = localStorage.getItem('refresh_token')
     if (refreshToken) {
       try {
+        // 先用 refresh_token 换取新的 access_token
+        await refreshAccessToken()
+        // 再获取用户信息
         const user = await authApi.getCurrentUser()
         set({ user, isAuthenticated: true, isLoading: false, isInitialized: true })
         return
       } catch (err) {
-        console.warn('Get current user failed:', err)
+        console.warn('Refresh token failed:', err)
         // Clear invalid refresh token
         localStorage.removeItem('refresh_token')
       }
