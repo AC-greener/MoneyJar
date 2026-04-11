@@ -19,98 +19,20 @@
   --data-raw '{"code":"eb5239e5-629e-42d9-991b-357357c0c985"}'
 
 5. 页面已经登录上了，但是接口有一些报错：
-curl 'https://moneyjar.zhutongtong.cn/api/auth/exchange' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,zh-HK;q=0.8,en-US;q=0.7,en;q=0.6' \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -b 'Hm_lvt_ede26455936c86e9ca96f051b0734ab9=1762869678' \
-  -H 'origin: https://moneyjar.zhutongtong.cn' \
-  -H 'pragma: no-cache' \
-  -H 'priority: u=1, i' \
-  -H 'referer: https://moneyjar.zhutongtong.cn/auth/callback?exchange_code=9943da04-2361-4eb9-88ad-3d0084e662da&return_to=%2Frecord' \
-  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
-  -H 'sec-ch-ua-mobile: ?1' \
-  -H 'sec-ch-ua-platform: "iOS"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1' \
-  --data-raw '{"code":"9943da04-2361-4eb9-88ad-3d0084e662da"}'
-  curl 'https://moneyjar.zhutongtong.cn/api/auth/exchange' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,zh-HK;q=0.8,en-US;q=0.7,en;q=0.6' \
-  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNTMyMDU1NC03YThhLTQ3NGMtOGRmYi05ZWRkMDA1NmEzZDAiLCJlbWFpbCI6InpodTE1OTI5Nzc0MzA0QGdtYWlsLmNvbSIsInBsYW4iOiJmcmVlIiwiaWF0IjoxNzc1ODc5MzUyLCJleHAiOjE3NzU4ODAyNTJ9.cisep-o6Ptb7mQsCPMnM3_vtMeH3xFuBmH4abdmfb5k' \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -b 'Hm_lvt_ede26455936c86e9ca96f051b0734ab9=1762869678' \
-  -H 'origin: https://moneyjar.zhutongtong.cn' \
-  -H 'pragma: no-cache' \
-  -H 'priority: u=1, i' \
-  -H 'referer: https://moneyjar.zhutongtong.cn/record' \
-  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
-  -H 'sec-ch-ua-mobile: ?1' \
-  -H 'sec-ch-ua-platform: "iOS"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1' \
-  --data-raw '{"code":"9943da04-2361-4eb9-88ad-3d0084e662da"}'
-
-  curl 'https://moneyjar.zhutongtong.cn/api/auth/exchange' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,zh-HK;q=0.8,en-US;q=0.7,en;q=0.6' \
-  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNTMyMDU1NC03YThhLTQ3NGMtOGRmYi05ZWRkMDA1NmEzZDAiLCJlbWFpbCI6InpodTE1OTI5Nzc0MzA0QGdtYWlsLmNvbSIsInBsYW4iOiJmcmVlIiwiaWF0IjoxNzc1ODc5MzU1LCJleHAiOjE3NzU4ODAyNTV9.5_SqG-gN4PszECR6kNAWUY_eqz4T74XEiB1DLZ2f6VM' \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -b 'Hm_lvt_ede26455936c86e9ca96f051b0734ab9=1762869678' \
-  -H 'origin: https://moneyjar.zhutongtong.cn' \
-  -H 'pragma: no-cache' \
-  -H 'priority: u=1, i' \
-  -H 'referer: https://moneyjar.zhutongtong.cn/record' \
-  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
-  -H 'sec-ch-ua-mobile: ?1' \
-  -H 'sec-ch-ua-platform: "iOS"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1' \
-  --data-raw '{"code":"9943da04-2361-4eb9-88ad-3d0084e662da"}'
-
-  curl 'https://moneyjar.zhutongtong.cn/api/api/transactions/' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,zh-HK;q=0.8,en-US;q=0.7,en;q=0.6' \
-  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNTMyMDU1NC03YThhLTQ3NGMtOGRmYi05ZWRkMDA1NmEzZDAiLCJlbWFpbCI6InpodTE1OTI5Nzc0MzA0QGdtYWlsLmNvbSIsInBsYW4iOiJmcmVlIiwiaWF0IjoxNzc1ODc5MzU1LCJleHAiOjE3NzU4ODAyNTV9.5_SqG-gN4PszECR6kNAWUY_eqz4T74XEiB1DLZ2f6VM' \
-  -H 'cache-control: no-cache' \
-  -b 'Hm_lvt_ede26455936c86e9ca96f051b0734ab9=1762869678' \
-  -H 'pragma: no-cache' \
-  -H 'priority: u=1, i' \
-  -H 'referer: https://moneyjar.zhutongtong.cn/record' \
-  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
-  -H 'sec-ch-ua-mobile: ?1' \
-  -H 'sec-ch-ua-platform: "iOS"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-
-  6. 接口报错：
-  7. 
-  curl 'https://moneyjar.zhutongtong.cn/api/auth/exchange' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,zh-HK;q=0.8,en-US;q=0.7,en;q=0.6' \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -b 'Hm_lvt_ede26455936c86e9ca96f051b0734ab9=1762869678' \
-  -H 'origin: https://moneyjar.zhutongtong.cn' \
-  -H 'pragma: no-cache' \
-  -H 'priority: u=1, i' \
-  -H 'referer: https://moneyjar.zhutongtong.cn/auth/callback?exchange_code=5503cd4b-cd82-4ddf-a677-8d26e7f6a2d3&return_to=%2Fsettings' \
-  -H 'sec-ch-ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"' \
-  -H 'sec-ch-ua-mobile: ?1' \
-  -H 'sec-ch-ua-platform: "iOS"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1' \
-  --data-raw '{"code":"5503cd4b-cd82-4ddf-a677-8d26e7f6a2d3"}'
+6. 整理一下目录结构，吧安卓的代码放到`/android`目录下，整体的目录结构如下：
+```
+/android
+  ├── app
+  │   ├── src
+  │   │   ├── main
+  │   │   │   ├── java
+  │   │   │   └── res
+  │   │   └── test
+  │   │       └── java
+  │   └── build.gradle
+  ├── build.gradle
+  └── settings.gradle
+/frontend
+/server
+...
+```

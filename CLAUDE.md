@@ -5,25 +5,31 @@
 ## 项目结构
 
 ```
-app/src/main/java/com/example/moneyjar/
-├── MainActivity.kt          # 应用入口
-├── data/                    # Repository、Room Entity、Retrofit API
-│   ├── local/              # Room Database、DAO
-│   ├── remote/             # Retrofit Service、DTO
-│   └── repository/         # Repository 实现
-├── domain/                  # DDD 领域层
-│   ├── model/              # 领域模型（Account/Transaction/Budget/Analytics）
-│   └── repository/         # Repository 接口
-├── ui/                      # Compose UI
-│   ├── theme/              # Theme、Color、Type
-│   ├── screens/            # 页面（Home/Stats/Settings 等）
-│   └── components/         # 通用组件
-└── voice/                   # ML Kit 语音识别
+android/                     # Android 应用（Kotlin + Jetpack Compose）
+├── app/
+│   └── src/main/java/com/example/moneyjar/
+│       ├── MainActivity.kt          # 应用入口
+│       ├── data/                    # Repository、Room Entity、Retrofit API
+│       │   ├── local/              # Room Database、DAO
+│       │   ├── remote/             # Retrofit Service、DTO
+│       │   └── repository/         # Repository 实现
+│       ├── domain/                  # DDD 领域层
+│       │   ├── model/              # 领域模型（Account/Transaction/Budget/Analytics）
+│       │   └── repository/         # Repository 接口
+│       ├── ui/                      # Compose UI
+│       │   ├── theme/              # Theme、Color、Type
+│       │   ├── screens/            # 页面（Home/Stats/Settings 等）
+│       │   └── components/         # 通用组件
+│       └── voice/                   # ML Kit 语音识别
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradle/
 
 server/                      # Hono.js 边缘服务端
 frontend/                    # React Web 管理后台（独立项目）
 docs/                        # 需求与架构文档
 plans/                       # 复杂改动执行计划
+.github/                     # CI/CD 配置
 ```
 
 ## 技术栈约束
@@ -43,11 +49,11 @@ plans/                       # 复杂改动执行计划
 
 ```bash
 # Android
-./gradlew build              # 构建项目
-./gradlew installDebug       # 安装 Debug APK
-./gradlew test               # 运行单元测试
-./gradlew connectedAndroidTest # 真机/模拟器测试
-./gradlew assembleRelease    # 生成 Release 包
+cd android && ./gradlew build              # 构建项目
+cd android && ./gradlew installDebug       # 安装 Debug APK
+cd android && ./gradlew test               # 运行单元测试
+cd android && ./gradlew connectedAndroidTest # 真机/模拟器测试
+cd android && ./gradlew assembleRelease    # 生成 Release 包
 
 # Server
 cd server && pnpm dev        # 本地开发
@@ -68,8 +74,8 @@ cd frontend && npm run dev   # 开发服务器
 
 ## 测试要求
 
-- **Android Unit Tests**: `app/src/test/`，重点测试 ViewModel State 和 Repository
-- **Android UI Tests**: `app/src/androidTest/`，使用 Compose Test Rule
+- **Android Unit Tests**: `android/app/src/test/`，重点测试 ViewModel State 和 Repository
+- **Android UI Tests**: `android/app/src/androidTest/`，使用 Compose Test Rule
 - **Server Integration Tests**: `test/integration/`，使用 Vitest + Hono testClient
 - 任务完成前必须运行测试并确保通过
 
