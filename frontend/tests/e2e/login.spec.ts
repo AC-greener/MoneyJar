@@ -23,15 +23,13 @@ test.describe('登录流程', () => {
     await expect(googleIcon).toBeVisible();
   });
 
-  test('点击登录按钮跳转到 OAuth 起点', async ({ page }) => {
+  test('点击登录按钮跳转到 Google OAuth', async ({ page }) => {
     // 点击登录按钮
     const loginButton = page.getByRole('button', { name: /使用 Google 登录/i });
     await loginButton.click();
 
-    // 验证跳转到 Google OAuth 起点
-    await expect(page).toHaveURL(/\/api\/auth\/google\/start/);
-    // 验证包含 return_to 参数
-    await expect(page.url()).toContain('return_to=');
+    // 验证跳转到 Google 授权页面
+    await expect(page).toHaveURL(/accounts\.google\.com/);
   });
 
   test('callback 页面无 exchange_code 时显示错误', async ({ page }) => {
@@ -51,7 +49,6 @@ test.describe('登录流程', () => {
 
     // 验证页面加载 - 使用 body 作为 locator
     await expect(page.locator('body')).toBeVisible();
-    // 页面应该显示加载状态或错误状态（取决于 API 响应）
   });
 
   test('未登录用户访问受保护页面显示登录按钮', async ({ page }) => {
@@ -77,22 +74,22 @@ test.describe('登录流程', () => {
     await expect(bottomNav).toBeVisible();
   });
 
-  test('重新登录按钮点击跳转到 OAuth 起点', async ({ page }) => {
+  test('重新登录按钮点击跳转到 Google OAuth', async ({ page }) => {
     await page.goto('/auth/callback');
 
     // 点击重新登录按钮
     const retryButton = page.getByRole('button', { name: /重新登录/i });
     await retryButton.click();
 
-    // 验证跳转到 Google OAuth 起点
-    await expect(page).toHaveURL(/\/api\/auth\/google\/start/);
+    // 验证跳转到 Google OAuth 页面
+    await expect(page).toHaveURL(/accounts\.google\.com/);
   });
 });
 
-test.describe('OAuth 完整流程（需要服务端）', () => {
-  test.skip('完整 OAuth 登录流程', async ({ page }) => {
-    // 这个测试需要真实的服务端运行
-    // 在 CI/生产环境中运行
+test.describe('OAuth 完整流程（需要人工授权）', () => {
+  test.skip('完整 OAuth 登录流程需要人工操作 Google 授权', async ({ page }) => {
+    // 注意：这个测试需要人工在 Google 授权页面完成登录
+    // 自动化测试无法完成 Google 登录
 
     await page.goto('/');
 
@@ -102,8 +99,5 @@ test.describe('OAuth 完整流程（需要服务端）', () => {
 
     // 2. 应该跳转到 Google 授权页面
     await expect(page).toHaveURL(/accounts\.google\.com/);
-
-    // 注意：实际的 Google 授权需要人工操作或 mock
-    // 这里只是验证跳转
   });
 });
