@@ -213,3 +213,184 @@ CREATE TABLE IF NOT EXISTS login_exchange_tokens (
 ALTER TABLE login_exchange_tokens ADD COLUMN access_token TEXT NOT NULL;
 ALTER TABLE login_exchange_tokens ADD COLUMN refresh_token TEXT NOT NULL;
 ```
+
+---
+
+## 2026-04-11 新修复的问题
+
+### 8. URL 路径重复拼接 `/api/api/transactions/`
+
+**现象**：API 请求出现双重 `/api` 前缀，如 `/api/api/transactions/` 导致 404。
+
+**根因**：`BASE_URL=/api`，但部分 API 调用已带了 `/api` 前缀。
+
+**修复**：
+- `frontend/src/api/auth.ts` - 移除了路径中多余的 `/api` 前缀
+- `frontend/src/api/transaction.ts` - 移除了路径中多余的 `/api` 前缀
+
+---
+
+### 9. CallbackPage 无限循环调用
+
+**现象**：页面卡在"正在完成 Google 授权，请稍候"，`/auth/exchange` 被无限重复调用。
+
+**根因**：`CallbackPage.tsx` 缺少 `useRef` 防护，导致 `completeOAuthLogin` 被重复执行。
+
+**修复**：
+```typescript
+const hasCalledRef = useRef(false)
+useEffect(() => {
+  if (hasCalledRef.current) return
+  hasCalledRef.current = true
+  // ... business logic
+}, [searchParams])
+```
+
+---
+
+### 10. 生产环境使用 localhost:8787
+
+**现象**：登录后 API 请求发往 `http://localhost:8787/auth/exchange` 而不是生产服务器。
+
+**根因**：`.env.production` 未设置 `VITE_API_BASE_URL`，前端使用了默认值。
+
+**修复**：在 `frontend/.env.production` 中添加：
+```
+VITE_API_BASE_URL=/api
+```
+
+---
+
+### 11. 刷新页面后 401 错误（refresh_token 未存储）
+
+**现象**：登录成功后页面刷新出现 401 未授权错误。
+
+**根因**：`exchangeCode()` 返回 refresh_token 给前端，但未存储到 `refresh_tokens` 表。
+
+**修复**（`server/src/services/auth.service.ts`）：
+```typescript
+async exchangeCode(code: string) {
+  // ... 验证逻辑 ...
+
+  // 确保 refresh_token 存储到 refresh_tokens 表
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const existingToken = await this.refreshTokenRepo.findByToken(exchangeRecord.refreshToken);
+  if (!existingToken) {
+    await this.refreshTokenRepo.create(exchangeRecord.userId, exchangeRecord.refreshToken, expiresAt);
+  }
+
+  return { /* ... */ };
+}
+```
+
+---
+
+### 12. refreshAccessToken 未存储新的 refresh_token
+
+**现象**：使用 refresh_token 刷新后，下次刷新仍然失败。
+
+**根因**：服务器端实现了 refresh_token 轮换（撤销旧token，生成新token），但客户端只存储了新 access_token，丢弃了新的 refresh_token。
+
+**修复**（`frontend/src/api/client.ts`）：
+```typescript
+const response = await axios.post<{ access_token: string; refresh_token?: string }>(/* ... */)
+// 服务器端会轮换 refresh_token，需要存储新的
+if (response.data.refresh_token) {
+  setRefreshToken(response.data.refresh_token)
+}
+```
+
+---
+
+### 13. initialize 失败后无限重试
+
+**现象**：refresh_token 无效时，`/auth/refresh` 被无限重复调用。
+
+**根因**：`initialize()` 在 refresh 失败时没有设置 `isInitialized: true`，导致页面状态不变，持续重试。
+
+**修复**（`frontend/src/stores/authStore.ts`）：
+```typescript
+} catch (err) {
+  console.warn('Refresh token failed:', err)
+  localStorage.removeItem('refresh_token')
+  // 无论成功失败，都标记为已初始化，防止无限重试
+  set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true })
+  return
+}
+```
+
+---
+
+### 14. completeOAuthLogin 重复调用
+
+**现象**：快速点击或页面状态异常时，`exchangeOAuthCode` 被多次调用。
+
+**修复**：
+```typescript
+completeOAuthLogin: async (exchangeCode: string) => {
+  const state = useAuthStore.getState()
+  if (state.isLoading || state.isAuthenticated) return
+  // ...
+}
+```
+
+---
+
+### 15. exchange 接口 500 错误（重复插入 token）
+
+**现象**：登录时 `POST /api/auth/exchange` 返回 500 错误。
+
+**根因**：`handleGoogleCallback` 已经将 refresh_token 存储到 `refresh_tokens` 表，`exchangeCode` 中再次插入时触发唯一约束冲突。
+
+**修复**：插入前先检查 token 是否已存在：
+```typescript
+const existingToken = await this.refreshTokenRepo.findByToken(exchangeRecord.refreshToken);
+if (!existingToken) {
+  await this.refreshTokenRepo.create(exchangeRecord.userId, exchangeRecord.refreshToken, expiresAt);
+}
+```
+
+---
+
+## 登录流程架构
+
+```
+1. 用户点击登录 → GET /api/auth/google/start?return_to=当前页
+2. Google 授权页 → 用户授权 → GET /api/auth/google/callback?code=xxx&state=xxx
+3. 服务器 handleGoogleCallback:
+   - 验证 Google token
+   - Upsert 用户
+   - 创建 access_token (15分钟)
+   - 创建 refresh_token (30天) → 存储到 refresh_tokens 表
+   - 创建一次性 exchange_code → 存储到 login_exchange_tokens 表
+   - 重定向到 /auth/callback?exchange_code=xxx
+4. 前端 CallbackPage:
+   - 调用 POST /api/auth/exchange { code: xxx }
+5. 服务器 exchangeCode:
+   - 验证 exchange_code
+   - 标记为已使用
+   - 返回 access_token + refresh_token + 用户信息
+   - (确保 refresh_token 存入 refresh_tokens 表)
+6. 前端存储 tokens:
+   - access_token → 内存 (apiClient 默认headers)
+   - refresh_token → localStorage
+7. 后续请求:
+   - access_token 过期时自动调用 /api/auth/refresh
+   - 服务器轮换 refresh_token (撤销旧的, 创建新的)
+   - 前端存储新的 refresh_token
+```
+
+## 相关文件
+
+### 前端
+- `frontend/src/api/client.ts` - API 客户端，token 管理
+- `frontend/src/api/auth.ts` - 认证相关 API 调用
+- `frontend/src/pages/CallbackPage.tsx` - OAuth 回调页面
+- `frontend/src/stores/authStore.ts` - 认证状态管理
+- `frontend/.env.production` - 生产环境配置
+
+### 后端
+- `server/src/services/auth.service.ts` - 认证服务核心逻辑
+- `server/src/repositories/refresh-token.repository.ts` - refresh_token CRUD
+- `server/src/repositories/oauth.repository.ts` - OAuth state 和 exchange code CRUD
+- `server/src/db/schema.ts` - 数据库表结构

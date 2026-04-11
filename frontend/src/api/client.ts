@@ -48,12 +48,17 @@ const refreshAccessToken = async (): Promise<string> => {
   }
 
   try {
-    const response = await axios.post<{ access_token: string }>(
+    const response = await axios.post<{ access_token: string; refresh_token?: string }>(
       `${BASE_URL}/auth/refresh`,
       { refresh_token: refreshToken }
     )
     const newAccessToken = response.data.access_token
     setAccessToken(newAccessToken)
+    // 服务器端会轮换 refresh_token（撤销旧的，创建新的）
+    // 如果返回了新的 refresh_token，需要存储它
+    if (response.data.refresh_token) {
+      setRefreshToken(response.data.refresh_token)
+    }
     return newAccessToken
   } catch {
     // Refresh failed, clear tokens and redirect to login

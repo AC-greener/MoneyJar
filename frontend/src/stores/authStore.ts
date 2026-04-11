@@ -61,6 +61,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         console.warn('Refresh token failed:', err)
         // Clear invalid refresh token
         localStorage.removeItem('refresh_token')
+        // 无论成功失败，都标记为已初始化，防止无限重试
+        set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true })
+        return
       }
     }
 
@@ -97,13 +100,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   completeOAuthLogin: async (exchangeCode: string) => {
+    // 防止重复调用
+    const state = useAuthStore.getState()
+    if (state.isLoading || state.isAuthenticated) return
+
     set({ isLoading: true, error: null })
     try {
       const data = await authApi.exchangeOAuthCode(exchangeCode)
-      set({ user: data.user, isAuthenticated: true, isLoading: false })
+      set({ user: data.user, isAuthenticated: true, isLoading: false, isInitialized: true })
     } catch (err) {
       const message = err instanceof Error ? err.message : '登录失败'
-      set({ error: message, isLoading: false })
+      set({ error: message, isLoading: false, isInitialized: true })
       throw err
     }
   },
@@ -115,7 +122,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // Even if logout fails, clear local state
     } finally {
-      set({ user: null, isAuthenticated: false, isLoading: false })
+      set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: false })
     }
   },
 

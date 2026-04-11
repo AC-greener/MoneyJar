@@ -319,6 +319,17 @@ export class AuthService {
       throw new Error('USER_NOT_FOUND');
     }
 
+    // ─────────────────────────────────────────
+    // 修复：确保 refresh_token 存储到 refresh_tokens 表
+    // handleGoogleCallback 可能已经存储过了（如果它比 exchangeCode 先执行完）
+    // 因此使用 findByToken 检查，如果已存在则跳过
+    // ─────────────────────────────────────────
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const existingToken = await this.refreshTokenRepo.findByToken(exchangeRecord.refreshToken);
+    if (!existingToken) {
+      await this.refreshTokenRepo.create(exchangeRecord.userId, exchangeRecord.refreshToken, expiresAt);
+    }
+
     return {
       accessToken: exchangeRecord.accessToken,
       refreshToken: exchangeRecord.refreshToken,
