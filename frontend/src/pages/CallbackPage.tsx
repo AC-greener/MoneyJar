@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -16,8 +16,13 @@ export default function CallbackPage() {
   const navigate = useNavigate()
   const { completeOAuthLogin, error, isLoading, clearError } = useAuthStore()
   const [localError, setLocalError] = useState<string | null>(null)
+  const hasCalledRef = useRef(false)
 
   useEffect(() => {
+    // 防止重复调用
+    if (hasCalledRef.current) return
+    hasCalledRef.current = true
+
     // 从 URL 获取 exchange_code 或 error
     const exchangeCode = searchParams.get('exchange_code')
     const errorParam = searchParams.get('error')
@@ -46,7 +51,7 @@ export default function CallbackPage() {
         console.error('OAuth login failed:', err)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchParams])
 
   // 处理重新登录点击
   const handleRetry = () => {
