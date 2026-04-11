@@ -18,7 +18,7 @@ const COLORS = [
 ]
 
 export function CategoryPieChart({ data, title }: CategoryPieChartProps) {
-  // Guard against undefined/null data
+  // Guard against  undefined/null data
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
