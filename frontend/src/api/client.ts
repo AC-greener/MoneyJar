@@ -49,7 +49,7 @@ const refreshAccessToken = async (): Promise<string> => {
 
   try {
     const response = await axios.post<{ access_token: string }>(
-      `${BASE_URL}/api/auth/refresh`,
+      `${BASE_URL}/auth/refresh`,
       { refresh_token: refreshToken }
     )
     const newAccessToken = response.data.access_token
@@ -67,7 +67,7 @@ const refreshAccessToken = async (): Promise<string> => {
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     // Skip auth for public endpoints
-    const publicEndpoints = ['/api/auth/google', '/api/auth/test-token', '/api/auth/refresh']
+    const publicEndpoints = ['/auth/google', '/auth/test-token', '/auth/refresh']
     if (publicEndpoints.some((ep) => config.url?.includes(ep))) {
       return config
     }

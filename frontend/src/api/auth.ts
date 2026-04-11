@@ -14,7 +14,7 @@ export const authApi = {
       return null
     }
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/test-token', {}, {
+      const response = await apiClient.post<AuthResponse>('/auth/test-token', {}, {
         headers: {
           Authorization: `Bearer ${TEST_TOKEN}`,
         },
@@ -40,7 +40,7 @@ export const authApi = {
    * Google OAuth login
    */
   async googleLogin(idToken: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/api/auth/google', { id_token: idToken })
+    const response = await apiClient.post<AuthResponse>('/auth/google', { id_token: idToken })
     const data = response.data
     setAccessToken(data.access_token)
     setRefreshToken(data.refresh_token)
@@ -51,7 +51,7 @@ export const authApi = {
    * Get current user info
    */
   async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>('/api/auth/me')
+    const response = await apiClient.get<User>('/auth/me')
     return response.data
   },
 
@@ -61,7 +61,7 @@ export const authApi = {
   async logout(): Promise<void> {
     const refreshToken = localStorage.getItem('refresh_token')
     if (refreshToken) {
-      await apiClient.post('/api/auth/logout', { refresh_token: refreshToken })
+      await apiClient.post('/auth/logout', { refresh_token: refreshToken })
     }
     setAccessToken(null)
     setRefreshToken(null)
@@ -73,7 +73,7 @@ export const authApi = {
    */
   async exchangeOAuthCode(code: string): Promise<AuthResponse> {
     const body: ExchangeCodeRequest = { code }
-    const response = await apiClient.post<AuthResponse>('/api/auth/exchange', body)
+    const response = await apiClient.post<AuthResponse>('/auth/exchange', body)
     const data = response.data
     setAccessToken(data.access_token)
     setRefreshToken(data.refresh_token)

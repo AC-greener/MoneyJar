@@ -30,7 +30,7 @@ describe('authApi.getTestToken', () => {
 
     expect(result).toBeNull()
     expect(postMock).toHaveBeenCalledWith(
-      '/api/auth/test-token',
+      '/auth/test-token',
       {},
       {
         headers: {
@@ -97,7 +97,7 @@ describe('authApi other methods', () => {
     const { authApi } = await import('@/api/auth')
     const result = await authApi.googleLogin('google-id-token')
 
-    expect(postMock).toHaveBeenCalledWith('/api/auth/google', { id_token: 'google-id-token' })
+    expect(postMock).toHaveBeenCalledWith('/auth/google', { id_token: 'google-id-token' })
     expect(result).toEqual(payload)
     expect(setAccessTokenMock).toHaveBeenCalledWith('google-access')
     expect(setRefreshTokenMock).toHaveBeenCalledWith('google-refresh')
@@ -109,7 +109,7 @@ describe('authApi other methods', () => {
 
     const { authApi } = await import('@/api/auth')
     await expect(authApi.getCurrentUser()).resolves.toEqual(user)
-    expect(getMock).toHaveBeenCalledWith('/api/auth/me')
+    expect(getMock).toHaveBeenCalledWith('/auth/me')
   })
 
   it('logout 有 refresh token 时调用接口并清空本地 token', async () => {
@@ -122,7 +122,7 @@ describe('authApi other methods', () => {
     const { authApi } = await import('@/api/auth')
     await authApi.logout()
 
-    expect(postMock).toHaveBeenCalledWith('/api/auth/logout', { refresh_token: 'refresh-123' })
+    expect(postMock).toHaveBeenCalledWith('/auth/logout', { refresh_token: 'refresh-123' })
     expect(setAccessTokenMock).toHaveBeenCalledWith(null)
     expect(setRefreshTokenMock).toHaveBeenCalledWith(null)
     if (originalLocalStorageDescriptor) {

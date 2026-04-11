@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { LoginButton } from '../components/common/LoginButton';
 
 describe('LoginButton', () => {
@@ -40,6 +40,36 @@ describe('LoginButton', () => {
 
       const button = screen.getByRole('button', { name: /使用 Google 登录/ });
       expect(button).toHaveTextContent('使用 Google 登录');
+    });
+  });
+
+  describe('交互', () => {
+    it('点击后跳转到 Google OAuth 起点', () => {
+      // Mock window.location.href
+      const originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...originalLocation,
+          href: '',
+          pathname: '/some-page',
+          search: '',
+          assign: vi.fn(),
+        },
+        writable: true,
+      });
+
+      render(<LoginButton />);
+      const button = screen.getByRole('button', { name: /使用 Google 登录/ });
+      fireEvent.click(button);
+
+      expect(window.location.href).toContain('/api/auth/google/start');
+      expect(window.location.href).toContain('return_to=');
+
+      // Restore
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      });
     });
   });
 });

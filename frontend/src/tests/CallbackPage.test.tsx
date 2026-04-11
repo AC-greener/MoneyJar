@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import CallbackPage from '../pages/CallbackPage';
 import * as authStore from '@/stores/authStore';
@@ -16,27 +16,32 @@ Object.defineProperty(import.meta, 'env', {
   },
 });
 
+// Create mock functions at module level
+const mockUseNavigate = vi.fn();
+const mockUseSearchParams = vi.fn();
+
 // Mock React Router
-const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => mockNavigate,
-    useSearchParams: vi.fn().mockReturnValue([new URLSearchParams(), vi.fn()]),
+    useNavigate: () => mockUseNavigate,
+    useSearchParams: () => mockUseSearchParams(),
   };
 });
 
 describe('CallbackPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockNavigate.mockClear();
+    mockUseNavigate.mockClear();
+    // Default to empty search params
+    mockUseSearchParams.mockReturnValue([new URLSearchParams(), vi.fn()]);
   });
 
   describe('缺少 exchange_code', () => {
     it('应显示缺少登录凭据错误', () => {
       // Mock store
-      (authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
         completeOAuthLogin: vi.fn(),
         error: null,
         isLoading: false,
@@ -53,7 +58,7 @@ describe('CallbackPage', () => {
     });
 
     it('应显示错误图标', () => {
-      (authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
         completeOAuthLogin: vi.fn(),
         error: null,
         isLoading: false,
@@ -72,7 +77,7 @@ describe('CallbackPage', () => {
     });
 
     it('应显示重新登录按钮', () => {
-      (authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
         completeOAuthLogin: vi.fn(),
         error: null,
         isLoading: false,
@@ -87,6 +92,86 @@ describe('CallbackPage', () => {
 
       const retryButton = screen.getByRole('button', { name: /重新登录/ });
       expect(retryButton).toBeTruthy();
+    });
+  });
+
+  describe('有 exchange_code', () => {
+    const mockSearchParams = new URLSearchParams({
+      exchange_code: 'test-exchange-code',
+      return_to: '/record',
+    });
+
+    beforeEach(() => {
+      mockUseSearchParams.mockReturnValue([mockSearchParams, vi.fn()]);
+    });
+
+    it('登录成功时跳转', async () => {
+      const mockCompleteOAuthLogin = vi.fn().mockResolvedValue(undefined);
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        completeOAuthLogin: mockCompleteOAuthLogin,
+        error: null,
+        isLoading: false,
+        clearError: vi.fn(),
+      }));
+
+      render(
+        <BrowserRouter>
+          <CallbackPage />
+        </BrowserRouter>
+      );
+
+      // Wait for the async operation
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(mockCompleteOAuthLogin).toHaveBeenCalledWith('test-exchange-code');
+      expect(mockUseNavigate).toHaveBeenCalledWith('/record', { replace: true });
+    });
+
+    it('登录失败时调用 completeOAuthLogin 并记录错误', async () => {
+      const mockCompleteOAuthLogin = vi.fn().mockRejectedValue(new Error('Exchange failed'));
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        completeOAuthLogin: mockCompleteOAuthLogin,
+        error: null,
+        isLoading: false,
+        clearError: vi.fn(),
+      }));
+
+      render(
+        <BrowserRouter>
+          <CallbackPage />
+        </BrowserRouter>
+      );
+
+      // Wait for the async operation
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      // Should call completeOAuthLogin
+      expect(mockCompleteOAuthLogin).toHaveBeenCalledWith('test-exchange-code');
+    });
+
+    it('加载中状态显示加载动画', () => {
+      const mockCompleteOAuthLogin = vi.fn().mockImplementation(() => new Promise(() => {}));
+      ;(authStore.useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        completeOAuthLogin: mockCompleteOAuthLogin,
+        error: null,
+        isLoading: true,
+        clearError: vi.fn(),
+      }));
+
+      render(
+        <BrowserRouter>
+          <CallbackPage />
+        </BrowserRouter>
+      );
+
+      expect(screen.getByText(/正在登录/)).toBeTruthy();
+      // 验证有旋转动画的 SVG（加载动画）
+      const spinnerSvg = document.querySelector('svg.animate-spin');
+      expect(spinnerSvg).toBeTruthy();
     });
   });
 

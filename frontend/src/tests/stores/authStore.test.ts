@@ -11,6 +11,7 @@ vi.mock('@/api/auth', () => ({
     googleLogin: vi.fn(),
     getCurrentUser: vi.fn(),
     logout: vi.fn(),
+    exchangeOAuthCode: vi.fn(),
   },
 }))
 
@@ -219,6 +220,37 @@ describe('authStore', () => {
       const { result } = renderHook(() => useAuthStore())
       await expect(result.current.loginWithGoogle('google-token')).rejects.toThrow('Google login failed')
       expect(result.current.error).toBe('Google login failed')
+      expect(result.current.isLoading).toBe(false)
+    })
+  })
+
+  describe('completeOAuthLogin', () => {
+    it('成功时设置用户为已登录', async () => {
+      const { authApi } = await import('@/api/auth')
+      ;(authApi.exchangeOAuthCode as ReturnType<typeof vi.fn>).mockResolvedValue({
+        user: mockUser,
+        access_token: 'token',
+        refresh_token: 'refresh',
+      })
+
+      const { result } = renderHook(() => useAuthStore())
+      await act(async () => {
+        await result.current.completeOAuthLogin('exchange-code')
+      })
+
+      expect(authApi.exchangeOAuthCode).toHaveBeenCalledWith('exchange-code')
+      expect(result.current.user).toEqual(mockUser)
+      expect(result.current.isAuthenticated).toBe(true)
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('失败时写入错误信息', async () => {
+      const { authApi } = await import('@/api/auth')
+      ;(authApi.exchangeOAuthCode as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Exchange failed'))
+
+      const { result } = renderHook(() => useAuthStore())
+      await expect(result.current.completeOAuthLogin('exchange-code')).rejects.toThrow('Exchange failed')
+      expect(result.current.error).toBe('Exchange failed')
       expect(result.current.isLoading).toBe(false)
     })
   })

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { User } from '@/types/api'
 import { authApi } from '@/api/auth'
-import { apiClient, refreshAccessToken } from '@/api/client'
+import { refreshAccessToken } from '@/api/client'
 
 interface AuthState {
   user: User | null
