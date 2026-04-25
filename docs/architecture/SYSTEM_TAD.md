@@ -5,8 +5,8 @@
 本项目采用 **“瘦客户端 (Thin Client) + 边缘计算 (Edge Computing)”** 架构。核心业务逻辑（尤其是 AI 处理）集中在服务端，客户端保持轻量，确保多端一致性并降低设备功耗。
 
 - **Android 端**：基于 Jetpack Compose 的 UI 渲染层与数据采集层。
-- **Hono.js 服务端**：部署在边缘环境（Vercel/Cloudflare），负责 AI 编排与业务路由。
-- **AI 引擎**：Vercel AI SDK 驱动的 Gemini 1.5 系列模型。
+- **Hono.js 服务端**：部署在 Cloudflare Workers 边缘环境，负责 AI 编排与业务路由。
+- **AI 引擎**：Cloudflare Workers AI，负责自然语言到账单草稿的结构化解析与后续财务 AI 能力。
 - **数据层**：Cloudflare D1 (关系型数据库) + R2 (对象存储)。
 
 ## 2. 核心领域模型 (DDD & Scalability)
@@ -34,7 +34,7 @@
 - **UI Layer**: 使用 Jetpack Compose，配合 Material 3 规范实现响应式布局。
 - **Networking**: **Retrofit 2 + OkHttp 4**。配置 30s 响应超时以适配 AI 解析耗时。
 - **Local Persistence**: **Room Database**。作为云端 D1 数据库的本地镜像，支持断网写入。
-- **Sensors/ML**: 集成 Google ML Kit 实现本地文本转语音 (STT)，减少原始音频上传的带宽消耗。
+- **Sensors/ML**: 集成设备侧语音识别能力实现本地语音转文本 (STT)，减少原始音频上传的带宽消耗。
 
 ### 2.2 数据同步逻辑
 
@@ -47,11 +47,12 @@
 
 服务端作为系统的“智能中枢”，处理所有非结构化请求。
 
-### 3.1 AI 处理链路 (Vercel AI SDK)
+### 3.1 AI 处理链路 (Cloudflare Workers AI)
 
-- **语义解析 (`/api/parse`)**: 接收原始文本，利用 `generateObject` 强制 AI 输出符合 Zod Schema 的结构化账单对象。
-- **财务助手 (`/api/chat`)**: 利用 `streamText` 实现流式对话，通过 RAG 模式查询 D1 数据并生成财务分析。
-- **模型选型**: 默认使用 **Gemini 1.5 Flash**（平衡速度与成本），复杂分析使用 Gemini 1.5 Pro。
+- **语义解析 (`/api/parse`)**: 接收客户端提交的最终记账文本，调用 Workers AI 生成符合服务端 Schema 的结构化账单草稿。
+- **确认与入账 (`/api/record/confirm`)**: 当解析结果存在低置信度字段或缺失字段时，服务端返回待确认草稿，用户确认后再完成入账。
+- **财务助手 (`/api/chat`)**: 后续对话能力同样运行在 Workers 侧，由 Workers AI 结合 D1 查询结果生成财务分析。
+- **模型策略**: 语音记账场景优先使用响应快、成本低的 Workers AI 文本模型；复杂分析能力可按场景切换到更强模型，但统一由服务端封装。
 
 ### 3.2 存储方案
 
@@ -107,7 +108,7 @@
 
 ## 6. 安全与性能考量
 
-- **安全性**: API Key 存储在 Vercel/Cloudflare 环境变量中，绝不暴露给客户端。
+- **安全性**: Workers AI 绑定和相关密钥仅保存在服务端环境中，绝不暴露给客户端。
 - **限流**: 服务端实现 Rate Limiting，防止 AI API 被异常调用导致超支。
 - **性能**: 图像上传前在 Android 端进行压缩处理；AI 解析结果在服务端进行 Schema 校验后再入库。
 
@@ -115,7 +116,7 @@
 
 ## 7. 需求场景覆盖 (Traceability)
 
-- **场景 A (语音记账)**: 依赖 `ML Kit (Client)` -> `Retrofit` -> `Hono.js + AI SDK (Server)` -> `D1`。
+- **场景 A (语音记账)**: 依赖 `本地 STT (Client)` -> `Retrofit` -> `Hono.js + Workers AI (Server)` -> `D1`。
 - **场景 B (离线记账)**: 依赖 `Room (Client)` -> `WorkManager` 异步推送 -> `Hono.js`。
 - **场景 C (汇总查看)**: 依赖 `Hono.js` 聚合 SQL 查询 -> `Retrofit` -> `Compose UI`。
 
