@@ -1,13 +1,13 @@
 ## Why
 
-MoneyJar already has a clear product direction around voice-based bookkeeping, but the current project state does not yet define a formal end-to-end contract for turning speech into committed transactions across Android, Web, and the server. We need that contract now so teams can build the voice entry flow without duplicating parsing rules in clients or guessing when a transaction should be auto-committed versus confirmed by the user.
+MoneyJar already has a clear product direction around voice-based bookkeeping, but the current project state does not yet define a formal end-to-end contract for turning speech into committed transactions across the Web client and the server. We need that contract now so the voice entry flow can ship without duplicating parsing rules in clients or guessing when a transaction should be auto-committed versus confirmed by the user.
 
 ## What Changes
 
 - Add a text-first voice entry flow where client apps perform speech-to-text locally, place the recognized text into the record composer, and let the user edit before submission.
 - Add a server-side parsing workflow on Cloudflare Workers AI that converts submitted bookkeeping text into structured transaction drafts.
 - Add a confidence-based decision model on the server so high-confidence submissions can be committed directly while ambiguous submissions return a confirmation payload for user review.
-- Add shared API contracts that both Android and Web clients can use for parse, confirm, and commit flows.
+- Add shared API contracts for parse, confirm, and commit flows, with the current implementation focused on Web plus server and Android deferred.
 - Define error-handling and fallback behavior for speech recognition failure, parsing failure, and missing transaction fields.
 
 ## Capabilities
@@ -21,7 +21,6 @@ MoneyJar already has a clear product direction around voice-based bookkeeping, b
 ## Impact
 
 - Affected code:
-  - `android/` record-entry flow and repository integration
   - `frontend/` voice entry UI and API client wiring
   - `server/src/routes/` for parse and commit endpoints
   - `server/src/services/` for AI parsing, confidence handling, and transaction creation

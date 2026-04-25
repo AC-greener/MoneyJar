@@ -56,6 +56,55 @@ export interface VoiceParseResult {
   error?: string
 }
 
+export interface VoiceTransactionDraft {
+  type: 'income' | 'expense'
+  amount?: number
+  category?: string
+  note?: string
+  occurredAt?: string
+  confidence: number
+  missingFields: Array<'type' | 'amount' | 'category'>
+}
+
+export interface VoiceSubmitRequest {
+  text: string
+  source: 'voice' | 'manual'
+  locale?: string
+  timezone?: string
+}
+
+export interface VoiceConfirmRequest {
+  sourceText: string
+  drafts: Array<{
+    type: 'income' | 'expense'
+    amount: number
+    category: string
+    note?: string
+    occurredAt?: string
+    confidence: number
+    missingFields: Array<'type' | 'amount' | 'category'>
+  }>
+}
+
+export type VoiceSubmitResponse =
+  | {
+      status: 'ready_to_commit'
+      sourceText: string
+      drafts: VoiceTransactionDraft[]
+      committedTransactions: Transaction[]
+    }
+  | {
+      status: 'needs_confirmation'
+      sourceText: string
+      drafts: VoiceTransactionDraft[]
+    }
+  | {
+      status: 'failed'
+      sourceText: string
+      error: 'PARSE_FAILED'
+      drafts: VoiceTransactionDraft[]
+    }
+
 // Voice Input Props
 export interface VoiceInputProps {
   onTranscript: (text: string) => void

@@ -8,6 +8,9 @@ import { JwtPayloadSchema } from '../types/auth';
 declare module 'hono' {
   interface ContextVariableMap {
     user: JwtPayload;
+    aiParsed: boolean | undefined;
+    aiModel: string | undefined;
+    aiProcessingTime: number | undefined;
   }
 }
 

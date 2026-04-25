@@ -1,29 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
-import { useTransactionStore } from '@/stores/transactionStore'
-import type { VoiceParseResult } from '@/types/api'
-
-// Mock voice parsing - in production this would call the backend LLM
-function parseVoiceText(text: string): VoiceParseResult {
-  const amountMatch = text.match(/\d+(\.\d+)?/)
-  const amount = amountMatch ? parseFloat(amountMatch[0]) : 0
-
-  const categories = ['餐饮', '交通', '购物', '娱乐', '医疗', '工资', '投资', '其他']
-  const foundCategory = categories.find((c) => text.includes(c)) || '其他'
-
-  const isExpense = !text.includes('收入') && !text.includes('赚钱')
-  const isIncome = text.includes('收入') || text.includes('赚钱') || text.includes('发工资')
-
-  return {
-    transactions: [{
-      type: isIncome ? 'income' : (isExpense ? 'expense' : 'expense'),
-      amount,
-      category: foundCategory,
-      note: text,
-    }],
-    rawText: text,
-  }
-}
+import { transactionApi } from '@/api/transaction'
+import { TransactionConfirmDialog } from '@/components/transaction/TransactionConfirmDialog'
+import type { VoiceTransactionDraft } from '@/types/api'
+import type { CreateTransactionFormData } from '@/utils/validation'
 
 interface ExpenseInputProps {
   onSuccess?: () => void
@@ -35,11 +15,15 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
-
-  const { createTransaction, isLoading } = useTransactionStore()
+  const [inputSource, setInputSource] = useState<'voice' | 'manual'>('manual')
+  const [confirmationState, setConfirmationState] = useState<{
+    sourceText: string
+    draft: VoiceTransactionDraft
+  } | null>(null)
 
   const handleTranscript = useCallback((text: string) => {
     setInputText(text)
+    setInputSource('voice')
   }, [])
 
   const { isListening, interimText, error, start, stop } = useVoiceInput({
@@ -66,23 +50,31 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
     setSubmitError(null)
 
     try {
-      const parseResult = parseVoiceText(inputText)
-      const transaction = parseResult.transactions[0]
+      const result = await transactionApi.submitVoiceText({
+        text: inputText.trim(),
+        source: inputSource,
+      })
 
-      if (transaction.amount <= 0) {
-        setSubmitError('未能识别金额，请重试或手动输入')
-        setIsSubmitting(false)
+      if (result.status === 'failed') {
+        setSubmitError('转换失败，请重试或手动输入')
         return
       }
 
-      await createTransaction({
-        type: transaction.type,
-        amount: transaction.amount,
-        category: transaction.category,
-        note: transaction.note,
-      })
+      if (result.status === 'needs_confirmation') {
+        const [firstDraft] = result.drafts
+        if (!firstDraft) {
+          setSubmitError('未能生成可确认的交易，请重试')
+          return
+        }
+        setConfirmationState({
+          sourceText: result.sourceText,
+          draft: firstDraft,
+        })
+        return
+      }
 
       setInputText('')
+      setInputSource('manual')
       setShowSuccess(true)
       onSuccess?.()
 
@@ -94,6 +86,31 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
     }
   }
 
+  const handleConfirm = async (data: CreateTransactionFormData) => {
+    if (!confirmationState) return
+
+    setSubmitError(null)
+    await transactionApi.confirmVoiceTransaction({
+      sourceText: confirmationState.sourceText,
+      drafts: [{
+        type: data.type,
+        amount: data.amount,
+        category: data.category,
+        note: data.note,
+        occurredAt: data.created_at,
+        confidence: confirmationState.draft.confidence,
+        missingFields: [],
+      }],
+    })
+
+    setConfirmationState(null)
+    setInputText('')
+    setInputSource('manual')
+    setShowSuccess(true)
+    onSuccess?.()
+    setTimeout(() => setShowSuccess(false), 2000)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -102,7 +119,7 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
   }
 
   const displayText = interimText || inputText
-  const isProcessing = isListening || isSubmitting || isLoading
+  const isProcessing = isListening || isSubmitting
 
   return (
     <div className="flex flex-col gap-3">
@@ -113,7 +130,10 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
           <input
             type="text"
             value={displayText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => {
+              setInputText(e.target.value)
+              setInputSource('manual')
+            }}
             onKeyDown={handleKeyDown}
             placeholder="今天午餐花了50元"
             disabled={disabled || isProcessing}
@@ -134,7 +154,10 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
           {inputText && !isProcessing && (
             <button
               type="button"
-              onClick={() => setInputText('')}
+              onClick={() => {
+                setInputText('')
+                setInputSource('manual')
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               aria-label="清空输入"
             >
@@ -189,7 +212,7 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
           `}
           aria-label="提交记账"
         >
-          {isSubmitting || isLoading ? (
+          {isSubmitting ? (
             <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -222,6 +245,21 @@ export function ExpenseInput({ onSuccess, disabled = false }: ExpenseInputProps)
           <p className="text-sm text-red-500">{error || submitError}</p>
         )}
       </div>
+
+      {confirmationState && (
+        <TransactionConfirmDialog
+          isOpen
+          onClose={() => setConfirmationState(null)}
+          onConfirm={handleConfirm}
+          rawText={confirmationState.sourceText}
+          suggestedTransaction={{
+            type: confirmationState.draft.type,
+            amount: confirmationState.draft.amount ?? 0,
+            category: confirmationState.draft.category ?? '其他',
+            note: confirmationState.draft.note,
+          }}
+        />
+      )}
     </div>
   )
 }

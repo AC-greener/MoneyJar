@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define the server-side parse and commit contract for bookkeeping text so submitted text can be converted into structured drafts, classified by confidence, and either committed directly or returned for user confirmation.
+
+## Requirements
 
 ### Requirement: Server SHALL parse bookkeeping text into transaction drafts
 The server SHALL accept submitted bookkeeping text and return one or more structured transaction drafts that capture the interpreted bookkeeping intent.
@@ -58,3 +62,18 @@ The server SHALL associate parse results with the exact submitted bookkeeping te
 #### Scenario: Confirmation response retains source text
 - **WHEN** a parse request requires confirmation
 - **THEN** the server response keeps the original submitted text linked to the returned drafts
+
+### Requirement: Server SHALL maintain an explicit category keyword dictionary for fallback parsing
+The server SHALL maintain a documented per-category keyword dictionary for fallback parsing so common spoken bookkeeping nouns can map to the existing default categories without requiring confirmation for every obvious phrase.
+
+#### Scenario: Common food nouns map to food expense
+- **WHEN** submitted bookkeeping text includes a common spoken food noun such as `面`, `米线`, or `包子` together with an expense amount
+- **THEN** the fallback parser maps the draft to the `餐饮` category unless stronger evidence indicates another category
+
+#### Scenario: Generic expense verbs do not determine category alone
+- **WHEN** submitted bookkeeping text only contains a broad expense verb such as `买` or `花` without category-specific nouns
+- **THEN** the fallback parser may infer expense intent but does not treat the verb alone as sufficient evidence for a high-confidence category match
+
+#### Scenario: Keyword expansion stays aligned with default categories
+- **WHEN** the fallback parser dictionary is expanded
+- **THEN** new entries are grouped under the existing default categories `餐饮`, `交通`, `生鲜`, `购物`, `娱乐`, `医疗`, `投资`, `工资`, and `其他` rather than introducing ad hoc categories

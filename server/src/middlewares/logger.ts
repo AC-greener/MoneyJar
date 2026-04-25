@@ -211,6 +211,9 @@ export function createLoggerMiddleware() {
           errorMessage,
           clientIp,
           userAgent,
+          aiParsed: c.get('aiParsed'),
+          aiModel: c.get('aiModel'),
+          aiProcessingTime: c.get('aiProcessingTime'),
         };
 
         // 使用 waitUntil 确保日志写入在响应发送后继续执行

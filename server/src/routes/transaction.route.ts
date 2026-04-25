@@ -6,7 +6,13 @@ import {
   TransactionResponseSchema,
   PeriodQuerySchema,
 } from '../types/transaction';
+import {
+  VoiceTransactionConfirmSchema,
+  VoiceTransactionSubmitResponseSchema,
+  VoiceTransactionSubmitSchema,
+} from '../types/voice-transaction';
 import { createUserAuthMiddleware } from '../middlewares/user-auth';
+import { VoiceTransactionService } from '../services/voice-transaction.service';
 
 export const transactionRoute = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -74,6 +80,64 @@ async function handleList(c: Context) {
 
 // 创建交易
 transactionRoute.post('/', handleCreate);
+
+transactionRoute.post('/voice/submit', async (c) => {
+  const body = await c.req.json();
+  const parsed = VoiceTransactionSubmitSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues, requestId: c.get('requestId') }, 400);
+  }
+
+  const user = c.var.user;
+  const userId = user?.sub;
+  const plan = user?.plan;
+
+  if (!userId || !plan) {
+    return c.json({ error: 'Unauthorized', requestId: c.get('requestId') }, 401);
+  }
+
+  const service = new VoiceTransactionService(c.env);
+  const result = await service.submit(parsed.data, userId, plan);
+  c.set('aiParsed', result.aiMeta.parsed);
+  c.set('aiModel', result.aiMeta.model);
+  c.set('aiProcessingTime', result.aiMeta.processingTime);
+
+  const { aiMeta: _, ...payload } = result;
+  if (payload.status === 'failed') {
+    return c.json(VoiceTransactionSubmitResponseSchema.parse(payload), 422);
+  }
+
+  if (payload.status === 'needs_confirmation') {
+    return c.json(VoiceTransactionSubmitResponseSchema.parse(payload), 200);
+  }
+
+  return c.json(VoiceTransactionSubmitResponseSchema.parse(payload), 201);
+});
+
+transactionRoute.post('/voice/confirm', async (c) => {
+  const body = await c.req.json();
+  const parsed = VoiceTransactionConfirmSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues, requestId: c.get('requestId') }, 400);
+  }
+
+  const user = c.var.user;
+  const userId = user?.sub;
+  const plan = user?.plan;
+
+  if (!userId || !plan) {
+    return c.json({ error: 'Unauthorized', requestId: c.get('requestId') }, 401);
+  }
+
+  const service = new VoiceTransactionService(c.env);
+  const result = await service.confirm(parsed.data, userId, plan);
+  c.set('aiParsed', result.aiMeta.parsed);
+  c.set('aiModel', result.aiMeta.model);
+  c.set('aiProcessingTime', result.aiMeta.processingTime);
+
+  const { aiMeta: _, ...payload } = result;
+  return c.json(VoiceTransactionSubmitResponseSchema.parse(payload), 201);
+});
 
 // 获取交易列表或汇总
 transactionRoute.get('/', handleList);

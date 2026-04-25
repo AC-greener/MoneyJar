@@ -15,6 +15,8 @@ interface CloudflareSecretEnv {
   GOOGLE_REDIRECT_URI: string;
   TEST_AUTH_TOKEN: string;
   APP_BASE_URL: string;
+  AI?: Ai;
+  WORKERS_AI_ENABLED?: string;
 }
 
 // 扩展 CloudflareBindings 以包含这些 secret
