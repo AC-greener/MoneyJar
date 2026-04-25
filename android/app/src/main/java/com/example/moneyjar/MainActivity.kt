@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.moneyjar.data.repository.FakeTransactionRepository
+import com.example.moneyjar.auth.AuthManager
+import com.example.moneyjar.auth.AuthManagerFactory
+import com.example.moneyjar.data.local.MoneyJarDatabase
+import com.example.moneyjar.data.repository.RoomTransactionRepository
 import com.example.moneyjar.ui.app.MoneyJarApp
 import com.example.moneyjar.ui.app.MoneyJarViewModel
 import com.example.moneyjar.ui.app.MoneyJarViewModelFactory
@@ -18,12 +21,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MoneyJarTheme {
-                val repository = remember { FakeTransactionRepository() }
+                val database = remember { MoneyJarDatabase.getInstance(applicationContext) }
+                val repository = remember {
+                    RoomTransactionRepository(database.transactionDao())
+                }
                 val appViewModel: MoneyJarViewModel = viewModel(
                     factory = MoneyJarViewModelFactory(repository)
                 )
+                val authManager: AuthManager = viewModel(
+                    factory = AuthManagerFactory(applicationContext)
+                )
 
-                MoneyJarApp(viewModel = appViewModel)
+                MoneyJarApp(viewModel = appViewModel, authManager = authManager)
             }
         }
     }

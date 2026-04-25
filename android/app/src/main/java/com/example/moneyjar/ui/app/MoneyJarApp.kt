@@ -10,6 +10,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -17,18 +20,27 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.moneyjar.auth.AuthManager
 import com.example.moneyjar.ui.navigation.MoneyJarDestination
 import com.example.moneyjar.ui.screens.LedgerScreen
 import com.example.moneyjar.ui.screens.RecordScreen
 import com.example.moneyjar.ui.screens.SettingsScreen
 import com.example.moneyjar.ui.screens.StatsScreen
+import com.example.moneyjar.ui.screens.SyncBadgeType
 
 @Composable
-fun MoneyJarApp(viewModel: MoneyJarViewModel) {
+fun MoneyJarApp(
+    viewModel: MoneyJarViewModel,
+    authManager: AuthManager
+) {
     val navController = rememberNavController()
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    // For demo purposes, using LOCAL sync badge
+    // In production, this would come from SyncManager
+    var syncBadgeType by remember { mutableStateOf(SyncBadgeType.LOCAL) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -62,6 +74,8 @@ fun MoneyJarApp(viewModel: MoneyJarViewModel) {
             onNoteChange = viewModel::updateNote,
             onSubmitRecord = viewModel::submitRecord,
             onClearMessage = viewModel::clearTransientMessage,
+            authManager = authManager,
+            syncBadgeType = syncBadgeType,
             navController = navController,
         )
     }
@@ -76,6 +90,8 @@ private fun MoneyJarNavHost(
     onNoteChange: (String) -> Unit,
     onSubmitRecord: () -> Unit,
     onClearMessage: () -> Unit,
+    authManager: AuthManager,
+    syncBadgeType: SyncBadgeType,
     navController: androidx.navigation.NavHostController,
 ) {
     NavHost(
@@ -101,7 +117,12 @@ private fun MoneyJarNavHost(
             StatsScreen(uiState = uiState)
         }
         composable(MoneyJarDestination.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                authManager = authManager,
+                syncBadgeType = syncBadgeType,
+                onLoginSuccess = { /* Login successful, trigger sync if needed */ },
+                onLogoutComplete = { /* Logout complete */ }
+            )
         }
     }
 }

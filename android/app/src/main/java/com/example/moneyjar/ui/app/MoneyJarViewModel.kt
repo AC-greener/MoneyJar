@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.moneyjar.data.model.SummaryPeriod
 import com.example.moneyjar.data.model.TransactionDraft
+import com.example.moneyjar.data.repository.SuspendTransactionCreator
 import com.example.moneyjar.data.repository.TransactionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,13 +63,20 @@ class MoneyJarViewModel(
             return
         }
 
-        repository.createTransaction(
-            TransactionDraft(
-                amount = amount,
-                category = current.selectedCategory,
-                note = current.noteInput,
-            )
+        val draft = TransactionDraft(
+            amount = amount,
+            category = current.selectedCategory,
+            note = current.noteInput,
         )
+
+        // Use suspend version for Room-based repository
+        if (repository is SuspendTransactionCreator) {
+            viewModelScope.launch {
+                repository.createTransactionSuspend(draft)
+            }
+        } else {
+            repository.createTransaction(draft)
+        }
 
         uiState.update {
             it.copy(
