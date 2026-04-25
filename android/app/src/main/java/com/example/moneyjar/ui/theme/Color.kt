@@ -2,10 +2,13 @@ package com.example.moneyjar.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Mint80 = Color(0xFFA9E5D4)
+val Moss80 = Color(0xFFB7D7A8)
+val Coral80 = Color(0xFFF7C6BF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Mint40 = Color(0xFF1C8A6D)
+val Moss40 = Color(0xFF536D3B)
+val Coral40 = Color(0xFFB35B4B)
+val InkDark = Color(0xFF101715)
+val SurfaceLight = Color(0xFFF4FBF8)
+val SurfaceDark = Color(0xFF0E1513)

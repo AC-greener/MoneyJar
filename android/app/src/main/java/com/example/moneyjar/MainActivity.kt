@@ -4,44 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.moneyjar.data.repository.FakeTransactionRepository
+import com.example.moneyjar.ui.app.MoneyJarApp
+import com.example.moneyjar.ui.app.MoneyJarViewModel
+import com.example.moneyjar.ui.app.MoneyJarViewModelFactory
 import com.example.moneyjar.ui.theme.MoneyJarTheme
 
 class MainActivity : ComponentActivity() {
-	override fun onCreate(savedInstanceState: Bundle?) {
-		super.onCreate(savedInstanceState)
-		enableEdgeToEdge()
-		setContent {
-			MoneyJarTheme {
-				Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-					Greeting(
-						name = "Android tt",
-						modifier = Modifier.padding(innerPadding)
-					)
-				}
-			}
-		}
-	}
-}
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MoneyJarTheme {
+                val repository = remember { FakeTransactionRepository() }
+                val appViewModel: MoneyJarViewModel = viewModel(
+                    factory = MoneyJarViewModelFactory(repository)
+                )
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-	Text(
-		text = "Hello $name!",
-		modifier = modifier
-	)
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-	MoneyJarTheme {
-		Greeting("Android")
-	}
+                MoneyJarApp(viewModel = appViewModel)
+            }
+        }
+    }
 }
