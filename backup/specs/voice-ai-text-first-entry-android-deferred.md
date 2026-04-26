@@ -2,6 +2,14 @@
 
 This backup captures the Android-specific work that was originally tracked inside `openspec/changes/voice-ai-text-first-entry/` but is being deferred for later implementation.
 
+## Resume Status
+
+Android implementation resumed in `openspec/changes/android-voice-ai-text-first-entry/`.
+
+The active change uses the full Web-aligned text-first flow: speech and manual text both fill the Android composer, submit routes through the shared server parse/commit contract, and `needs_confirmation` opens a dedicated native confirmation screen.
+
+Android AI text-first entry is network-required for this phase. If submit or confirmation cannot reach the server, the app preserves the composer text or confirmation edits and prompts the user to retry; it does not queue unparsed text offline or create a local transaction before the server returns committed records.
+
 ## Deferred Task Group
 
 Original source: `openspec/changes/voice-ai-text-first-entry/tasks.md`

@@ -9,6 +9,8 @@ import com.example.moneyjar.data.model.SummaryPeriod
 import com.example.moneyjar.data.model.SyncState
 import com.example.moneyjar.data.model.TransactionDraft
 import com.example.moneyjar.data.model.TransactionType
+import com.example.moneyjar.data.remote.VoiceCommittedTransactionResponse
+import com.example.moneyjar.data.remote.toLocalTransaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +26,7 @@ import java.time.LocalDate
 class RoomTransactionRepository(
     private val transactionDao: TransactionDao,
     seedTransactions: List<MoneyJarTransaction> = emptyList()
-) : TransactionRepository, SuspendTransactionCreator, SyncableRepository {
+) : TransactionRepository, SuspendTransactionCreator, SyncableRepository, CommittedTransactionMirror {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -131,6 +133,21 @@ class RoomTransactionRepository(
 
     override suspend fun clearAuthenticatedData() {
         transactionDao.deleteTransactionsByOwnerType(OwnerType.AUTHENTICATED)
+    }
+
+    override suspend fun upsertCommittedTransactions(
+        committedTransactions: List<VoiceCommittedTransactionResponse>,
+        ownerId: String?
+    ): List<MoneyJarTransaction> {
+        return committedTransactions.map { committed ->
+            val existing = transactionDao.getTransactionByRemoteId(committed.id)
+            val local = committed.toLocalTransaction(
+                existingLocalId = existing?.id ?: 0,
+                ownerId = ownerId,
+            )
+            val insertedId = transactionDao.insertTransaction(local)
+            local.copy(id = existing?.id ?: insertedId)
+        }
     }
 
     override suspend fun getSyncStatusCount(): Map<SyncState, Int> {

@@ -29,6 +29,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: Long): MoneyJarTransaction?
 
+    @Query("SELECT * FROM transactions WHERE remoteId = :remoteId LIMIT 1")
+    suspend fun getTransactionByRemoteId(remoteId: Long): MoneyJarTransaction?
+
     @Query("SELECT * FROM transactions WHERE ownerType = :ownerType AND syncState = :syncState")
     suspend fun getTransactionsByOwnerAndSync(ownerType: OwnerType, syncState: SyncState): List<MoneyJarTransaction>
 

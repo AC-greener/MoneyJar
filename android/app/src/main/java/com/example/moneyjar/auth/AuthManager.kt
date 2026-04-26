@@ -211,12 +211,13 @@ class AuthManager(
 }
 
 class AuthManagerFactory(
-    private val context: Context
+    private val context: Context,
+    private val sessionManager: SessionManager = SessionManager(context),
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthManager::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthManager(context, SessionManager(context)) as T
+            return AuthManager(context, sessionManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

@@ -47,11 +47,23 @@ The Android application SHALL track enough metadata on each local transaction to
 - **THEN** the system updates local transaction metadata so repository and UI logic can determine the record's ownership and sync status
 
 ### Requirement: Android app SHALL continue functioning when remote sync is unavailable
-The Android application SHALL preserve local bookkeeping workflows even when login, token refresh, or transaction sync fails, and SHALL not block local data entry on remote availability.
+The Android application SHALL preserve local ledger, stats, settings, and already persisted bookkeeping records when remote services are unavailable. For AI text-first voice/manual submissions that require server parsing, Android SHALL keep the unparsed composer text or confirmation edits available for explicit retry and MUST NOT create a local transaction or background queue entry until the server returns committed transactions.
 
-#### Scenario: Sync failure does not block local bookkeeping
-- **WHEN** an authenticated user creates a transaction while backend sync is unavailable or fails
-- **THEN** the system stores the transaction locally, keeps it visible in ledger and stats views, and retains a retryable unsynced state
+#### Scenario: Sync failure does not block existing local bookkeeping views
+- **WHEN** backend sync is unavailable or fails
+- **THEN** Android continues rendering locally persisted transactions in ledger and stats views without dropping visible records
+
+#### Scenario: AI text-first submit is unavailable offline
+- **WHEN** the user submits natural-language composer text while Android cannot reach the server
+- **THEN** Android preserves the composer text, shows a retry message, and does not create a local transaction
+
+#### Scenario: AI confirmation is unavailable offline
+- **WHEN** the user confirms returned AI drafts while Android cannot reach the server
+- **THEN** Android preserves the edited confirmation drafts, shows a retry message, and does not create local transactions
+
+#### Scenario: Committed AI transactions become local source records
+- **WHEN** the server returns committed transactions after submit or confirmation
+- **THEN** Android mirrors those committed transactions into the local store with backend identifiers so ledger and stats continue to render from local data
 
 ### Requirement: Android app SHALL derive ledger and stats views from local persisted data
 The Android application SHALL use local persisted data as the rendering source for ledger and stats screens, regardless of whether records originated anonymously, were claimed after login, or were synchronized from the backend.

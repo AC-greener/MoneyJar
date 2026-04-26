@@ -50,6 +50,24 @@ interface TransactionApi {
     suspend fun deleteTransaction(
         @Path("id") id: Long
     ): Response<MessageResponse>
+
+    /**
+     * POST /api/transactions/voice/submit
+     * Submit natural-language bookkeeping text for server parse and commit decision
+     */
+    @POST("api/transactions/voice/submit")
+    suspend fun submitVoiceTransaction(
+        @Body body: VoiceTransactionSubmitRequest
+    ): Response<VoiceTransactionSubmitResponse>
+
+    /**
+     * POST /api/transactions/voice/confirm
+     * Confirm corrected server-returned voice transaction drafts
+     */
+    @POST("api/transactions/voice/confirm")
+    suspend fun confirmVoiceTransaction(
+        @Body body: VoiceTransactionConfirmRequest
+    ): Response<VoiceTransactionSubmitResponse>
 }
 
 /**

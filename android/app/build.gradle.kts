@@ -27,7 +27,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val backendUrl = providers.gradleProperty("MONEYJAR_BACKEND_URL")
-            .orElse("http://10.0.2.2:8787/")
+            .orElse("https://moneyjar.zhutongtong.cn/")
             .get()
         val googleClientId = providers.gradleProperty("MONEYJAR_GOOGLE_CLIENT_ID")
             .orElse("")
@@ -49,6 +49,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlin {
         compilerOptions {
@@ -84,8 +85,10 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.com.google.play.services.auth)
     implementation(libs.kotlinx.serialization.json)
+    coreLibraryDesugaring(libs.android.desugar.jdk.libs)
     add("kapt", libs.androidx.room.compiler.get())
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

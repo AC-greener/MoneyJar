@@ -6,6 +6,7 @@ import com.example.moneyjar.data.model.PeriodSummary
 import com.example.moneyjar.data.model.SummaryPeriod
 import com.example.moneyjar.data.model.SyncState
 import com.example.moneyjar.data.model.TransactionDraft
+import com.example.moneyjar.data.remote.VoiceCommittedTransactionResponse
 import kotlinx.coroutines.flow.StateFlow
 
 interface TransactionCreator {
@@ -35,6 +36,13 @@ interface SyncableRepository {
     suspend fun claimAnonymousTransactions(userId: String)
     suspend fun clearAuthenticatedData()
     suspend fun getSyncStatusCount(): Map<SyncState, Int>
+}
+
+interface CommittedTransactionMirror {
+    suspend fun upsertCommittedTransactions(
+        committedTransactions: List<VoiceCommittedTransactionResponse>,
+        ownerId: String? = null
+    ): List<MoneyJarTransaction>
 }
 
 interface TransactionRepository : TransactionCreator, LedgerReader, StatsReader

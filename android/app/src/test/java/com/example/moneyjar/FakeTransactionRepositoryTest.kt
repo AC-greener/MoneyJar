@@ -5,8 +5,10 @@ import com.example.moneyjar.data.model.SummaryPeriod
 import com.example.moneyjar.data.model.SyncState
 import com.example.moneyjar.data.model.TransactionDraft
 import com.example.moneyjar.data.model.TransactionType
+import com.example.moneyjar.data.remote.VoiceCommittedTransactionResponse
 import com.example.moneyjar.data.repository.FakeTransactionRepository
 import com.example.moneyjar.data.repository.RoomTransactionRepository
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -48,6 +50,69 @@ class FakeTransactionRepositoryTest {
         val after = repository.getSummary(SummaryPeriod.WEEK)
         assertEquals(before.expense + 88.0, after.expense, 0.001)
         assertTrue(after.categories.any { it.category == "交通" && it.amount >= 88.0 })
+    }
+
+    @Test
+    fun upsertCommittedTransactions_mirrorsRemoteIdAsSyncedTransaction() = runBlocking {
+        val repository = FakeTransactionRepository()
+
+        val mirrored = repository.upsertCommittedTransactions(
+            listOf(
+                VoiceCommittedTransactionResponse(
+                    id = 2001,
+                    type = "expense",
+                    amount = 26.5,
+                    category = "餐饮",
+                    note = "语音午饭",
+                    createdAt = "2026-04-26T12:30:00",
+                )
+            ),
+            ownerId = "user-1",
+        )
+
+        val transaction = mirrored.single()
+        assertEquals(2001L, transaction.remoteId)
+        assertEquals(SyncState.SYNCED, transaction.syncState)
+        assertEquals(26.5, transaction.amount, 0.001)
+        assertEquals("语音午饭", repository.transactions.value.first { it.remoteId == 2001L }.note)
+    }
+
+    @Test
+    fun upsertCommittedTransactions_doesNotDuplicateExistingRemoteId() = runBlocking {
+        val repository = FakeTransactionRepository()
+
+        repository.upsertCommittedTransactions(
+            listOf(
+                VoiceCommittedTransactionResponse(
+                    id = 2002,
+                    type = "expense",
+                    amount = 18.0,
+                    category = "交通",
+                    note = "地铁",
+                    createdAt = "2026-04-26T09:00:00",
+                )
+            )
+        )
+        val sizeAfterFirstMirror = repository.transactions.value.size
+
+        repository.upsertCommittedTransactions(
+            listOf(
+                VoiceCommittedTransactionResponse(
+                    id = 2002,
+                    type = "expense",
+                    amount = 20.0,
+                    category = "交通",
+                    note = "地铁改价",
+                    createdAt = "2026-04-26T09:00:00",
+                )
+            )
+        )
+
+        val matches = repository.transactions.value.filter { it.remoteId == 2002L }
+        assertEquals(sizeAfterFirstMirror, repository.transactions.value.size)
+        assertEquals(1, matches.size)
+        assertEquals(20.0, matches.single().amount, 0.001)
+        assertEquals("地铁改价", matches.single().note)
     }
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,9 @@ import com.example.moneyjar.ui.screens.RecordScreen
 import com.example.moneyjar.ui.screens.SettingsScreen
 import com.example.moneyjar.ui.screens.StatsScreen
 import com.example.moneyjar.ui.screens.SyncBadgeType
+import com.example.moneyjar.ui.screens.VoiceConfirmationScreen
+
+private const val VOICE_CONFIRMATION_ROUTE = "voice_confirmation"
 
 @Composable
 fun MoneyJarApp(
@@ -69,10 +73,15 @@ fun MoneyJarApp(
         MoneyJarNavHost(
             paddingValues = innerPadding,
             uiState = uiState,
-            onAmountChange = viewModel::updateAmount,
-            onCategoryChange = viewModel::updateCategory,
-            onNoteChange = viewModel::updateNote,
-            onSubmitRecord = viewModel::submitRecord,
+            onComposerChange = viewModel::updateRecordComposer,
+            onSubmitVoiceText = viewModel::submitVoiceText,
+            onRequestSpeechPermission = viewModel::markSpeechPermissionRequesting,
+            onStartListening = viewModel::markSpeechListening,
+            onSpeechResult = viewModel::applyRecognizedSpeech,
+            onSpeechFailed = viewModel::markSpeechFailed,
+            onConfirmationNavigationHandled = viewModel::onVoiceConfirmationNavigationHandled,
+            onUpdateConfirmationDraft = viewModel::updateConfirmationDraft,
+            onConfirmVoiceDrafts = viewModel::confirmVoiceDrafts,
             onClearMessage = viewModel::clearTransientMessage,
             authManager = authManager,
             syncBadgeType = syncBadgeType,
@@ -85,10 +94,22 @@ fun MoneyJarApp(
 private fun MoneyJarNavHost(
     paddingValues: PaddingValues,
     uiState: MoneyJarUiState,
-    onAmountChange: (String) -> Unit,
-    onCategoryChange: (String) -> Unit,
-    onNoteChange: (String) -> Unit,
-    onSubmitRecord: () -> Unit,
+    onComposerChange: (String) -> Unit,
+    onSubmitVoiceText: () -> Unit,
+    onRequestSpeechPermission: () -> Unit,
+    onStartListening: () -> Unit,
+    onSpeechResult: (String) -> Unit,
+    onSpeechFailed: (String) -> Unit,
+    onConfirmationNavigationHandled: () -> Unit,
+    onUpdateConfirmationDraft: (
+        index: Int,
+        type: String?,
+        amountInput: String?,
+        category: String?,
+        note: String?,
+        occurredAt: String?,
+    ) -> Unit,
+    onConfirmVoiceDrafts: () -> Unit,
     onClearMessage: () -> Unit,
     authManager: AuthManager,
     syncBadgeType: SyncBadgeType,
@@ -100,14 +121,30 @@ private fun MoneyJarNavHost(
         modifier = Modifier.padding(paddingValues)
     ) {
         composable(MoneyJarDestination.Record.route) {
+            LaunchedEffect(uiState.shouldNavigateToVoiceConfirmation) {
+                if (uiState.shouldNavigateToVoiceConfirmation) {
+                    navController.navigate(VOICE_CONFIRMATION_ROUTE)
+                    onConfirmationNavigationHandled()
+                }
+            }
             RecordScreen(
                 uiState = uiState,
-                categories = MoneyJarUiState.DEFAULT_CATEGORIES,
-                onAmountChange = onAmountChange,
-                onCategoryChange = onCategoryChange,
-                onNoteChange = onNoteChange,
-                onSubmit = onSubmitRecord,
+                onComposerChange = onComposerChange,
+                onSubmitVoiceText = onSubmitVoiceText,
+                onRequestSpeechPermission = onRequestSpeechPermission,
+                onStartListening = onStartListening,
+                onSpeechResult = onSpeechResult,
+                onSpeechFailed = onSpeechFailed,
                 onDismissMessage = onClearMessage,
+            )
+        }
+        composable(VOICE_CONFIRMATION_ROUTE) {
+            VoiceConfirmationScreen(
+                uiState = uiState,
+                categories = MoneyJarUiState.DEFAULT_CATEGORIES,
+                onBack = { navController.popBackStack() },
+                onUpdateDraft = onUpdateConfirmationDraft,
+                onConfirm = onConfirmVoiceDrafts,
             )
         }
         composable(MoneyJarDestination.Ledger.route) {

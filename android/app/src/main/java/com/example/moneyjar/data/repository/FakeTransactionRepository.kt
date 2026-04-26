@@ -6,13 +6,15 @@ import com.example.moneyjar.data.model.PeriodSummary
 import com.example.moneyjar.data.model.SummaryPeriod
 import com.example.moneyjar.data.model.TransactionDraft
 import com.example.moneyjar.data.model.TransactionType
+import com.example.moneyjar.data.remote.VoiceCommittedTransactionResponse
+import com.example.moneyjar.data.remote.toLocalTransaction
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class FakeTransactionRepository : TransactionRepository {
+class FakeTransactionRepository : TransactionRepository, CommittedTransactionMirror {
     private val transactionState = MutableStateFlow(seedTransactions())
     private var nextId = transactionState.value.maxOfOrNull { it.id }?.plus(1) ?: 1
 
@@ -66,6 +68,24 @@ class FakeTransactionRepository : TransactionRepository {
             expense = expense,
             categories = categories,
         )
+    }
+
+    override suspend fun upsertCommittedTransactions(
+        committedTransactions: List<VoiceCommittedTransactionResponse>,
+        ownerId: String?
+    ): List<MoneyJarTransaction> {
+        val mirrored = committedTransactions.map { committed ->
+            val existing = transactionState.value.firstOrNull { it.remoteId == committed.id }
+            committed.toLocalTransaction(
+                existingLocalId = existing?.id ?: nextId++,
+                ownerId = ownerId,
+            )
+        }
+
+        val remoteIds = mirrored.mapNotNull { it.remoteId }.toSet()
+        transactionState.value = (transactionState.value.filterNot { it.remoteId in remoteIds } + mirrored)
+            .sortedByDescending { it.createdAt }
+        return mirrored
     }
 
     private fun seedTransactions(): List<MoneyJarTransaction> {
