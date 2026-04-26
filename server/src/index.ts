@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 import { mcpRoute } from "./routes/mcp.route";
@@ -6,31 +6,39 @@ import { transactionRoute } from "./routes/transaction.route";
 import { authRoute } from "./routes/auth.route";
 import { createLoggerMiddleware } from "./middlewares/logger";
 import { createErrorHandler } from "./middlewares/error-handler";
+
+type AppEnv = { Bindings: CloudflareBindings };
+type AppMiddleware = MiddlewareHandler<AppEnv>;
+
+const requestIdMiddleware = requestId() as AppMiddleware;
+const appCorsMiddleware = cors({
+  origin: ["http://localhost:5173"],
+  allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowHeaders: ["Authorization", "Content-Type", "Accept"],
+}) as AppMiddleware;
+const mcpCorsMiddleware = cors({
+  origin: "*",
+  allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowHeaders: ["Authorization", "Content-Type", "Accept", "Mcp-Protocol-Version", "Mcp-Session-Id", "Last-Event-ID"],
+  exposeHeaders: ["Mcp-Session-Id"],
+}) as AppMiddleware;
+
 // 2. 将类型传给 Hono 实例
-const app = new Hono<{ Bindings: CloudflareBindings }>();
+const app = new Hono<AppEnv>();
 
 // 注册请求 ID 中间件
-app.use(requestId());
+app.use(requestIdMiddleware);
 
 // 注册日志中间件
 app.use(createLoggerMiddleware());
 
 // 全局 CORS 配置
 // 生产环境走同域访问，无需跨域白名单；仅保留本地开发域名用于本地分域联调
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
-  allowHeaders: ["Authorization", "Content-Type", "Accept"],
-}));
+app.use(appCorsMiddleware);
 
 app.use(
   "/api/mcp",
-  cors({
-    origin: "*",
-    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
-    allowHeaders: ["Authorization", "Content-Type", "Accept", "Mcp-Protocol-Version", "Mcp-Session-Id", "Last-Event-ID"],
-    exposeHeaders: ["Mcp-Session-Id"],
-  })
+  mcpCorsMiddleware
 );
 
 // 全局错误处理器

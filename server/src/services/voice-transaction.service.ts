@@ -231,7 +231,7 @@ export class VoiceTransactionService {
 
     const inferredType =
       keywordMatch?.type ??
-      (/(收入|工资|报销|奖金|进账|收了)/.test(segment) ? "income" : undefined) ??
+      (/(收入|工资|报销|奖金|进账|收了) /.test(segment) ? "income" : undefined) ??
       (/(花|买|支出|消费|付了|用了|充了)/.test(segment) ? "expense" : undefined) ??
       (amount !== undefined ? "expense" : undefined);
 

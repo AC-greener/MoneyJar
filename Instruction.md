@@ -41,6 +41,9 @@
 - [x] 为什么changes/voice-ai-text-first-entry/tasks.md 中还有一些未完成的任务
 - [x] 吧 openspec/changes/voice-ai-text-first-entry/tasks.md中的任务2以及相关文档，移动到backup/specs中，稍后再做
 - [x] 吧当前changes/voice-ai-text-first-entry 开发过程中遇到的问题、踩的坑、或者你学到的东西记录到文档中
-- [ ] 根据当前项目的实际情况，完善AGENTS.md，注意不要超过150行，必要时可以引用其他文档和规范链接
+- [x] 根据当前项目的实际情况，完善AGENTS.md，注意不要超过150行，必要时可以引用其他文档和规范链接
 - [x] openspec/changes/voice-ai-text-first-entry/tasks.md 中的 4.4 需要做什么吗，不需要做的话直接完成这个任务
 - [ ] review下安卓的测试覆盖率以及单元测试集成测试，看看还有哪些可以优化的地方
+
+## 0426
+- 现在有个问题：登录完成之后没有显示这个账号之前的记账数据，应该是有数据的，因为我之前在web端有一些记账，请你分析下这个问题

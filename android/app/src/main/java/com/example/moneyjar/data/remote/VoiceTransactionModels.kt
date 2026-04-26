@@ -79,9 +79,12 @@ private fun String.toTransactionType(): TransactionType {
 }
 
 private fun parseServerDateTime(value: String): LocalDateTime {
+    val trimmed = value.trim()
     return runCatching {
-        OffsetDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME).toLocalDateTime()
-    }.getOrElse {
-        LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME)
-    }
+        OffsetDateTime.parse(trimmed, DateTimeFormatter.ISO_DATE_TIME).toLocalDateTime()
+    }.recoverCatching {
+        LocalDateTime.parse(trimmed, DateTimeFormatter.ISO_DATE_TIME)
+    }.recoverCatching {
+        LocalDateTime.parse(trimmed, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    }.getOrThrow()
 }

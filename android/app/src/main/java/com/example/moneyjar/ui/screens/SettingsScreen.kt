@@ -1,6 +1,7 @@
 package com.example.moneyjar.ui.screens
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,8 @@ enum class SyncBadgeType {
     ERROR
 }
 
+private const val AUTH_TAG = "MoneyJarAuth"
+
 @Composable
 fun SettingsScreen(
     authManager: AuthManager,
@@ -71,11 +74,23 @@ fun SettingsScreen(
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        Log.d(
+            AUTH_TAG,
+            "Google sign-in ActivityResult resultCode=${result.resultCode} hasData=${result.data != null}"
+        )
+        if (result.resultCode != Activity.RESULT_OK) {
+            authManager.setLoginError("Google 登录未完成，resultCode=${result.resultCode}")
+            return@rememberLauncherForActivityResult
+        }
         coroutineScope.launch {
             when (authManager.handleGoogleSignInIntent(result.data)) {
-                is AuthResult.Success -> onLoginSuccess()
-                is AuthResult.Error -> Unit
+                is AuthResult.Success -> {
+                    Log.d(AUTH_TAG, "Google sign-in flow completed successfully")
+                    onLoginSuccess()
+                }
+                is AuthResult.Error -> {
+                    Log.w(AUTH_TAG, "Google sign-in flow returned an error")
+                }
             }
         }
     }
@@ -98,6 +113,7 @@ fun SettingsScreen(
                 if (BuildConfig.GOOGLE_CLIENT_ID.isBlank()) {
                     authManager.setConfigurationError("请先配置 MONEYJAR_GOOGLE_CLIENT_ID")
                 } else {
+                    Log.d(AUTH_TAG, "Google login button clicked")
                     googleSignInLauncher.launch(authManager.getGoogleSignInIntent())
                 }
             },

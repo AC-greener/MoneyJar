@@ -11,6 +11,7 @@ declare module 'hono' {
     aiParsed: boolean | undefined;
     aiModel: string | undefined;
     aiProcessingTime: number | undefined;
+    requestId: string;
   }
 }
 

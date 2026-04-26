@@ -30,7 +30,7 @@ android {
             .orElse("https://moneyjar.zhutongtong.cn/")
             .get()
         val googleClientId = providers.gradleProperty("MONEYJAR_GOOGLE_CLIENT_ID")
-            .orElse("")
+            .orElse("729063822997-j6qqaack9keg9or8df65sfr5q2f4otgd.apps.googleusercontent.com")
             .get()
 
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")

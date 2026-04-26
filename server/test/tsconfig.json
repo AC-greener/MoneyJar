@@ -3,12 +3,13 @@
   "compilerOptions": {
     "moduleResolution": "bundler",
     "types": [
+      "../worker-configuration.d.ts",
+      "../src/types/cloudflare.d.ts",
       "@cloudflare/vitest-pool-workers/types", // provides `cloudflare:test` and `cloudflare:workers` types
     ],
   },
   "include": [
-    "./**/*.ts",
+    "./**/*.ts", 
     "./**/*.d.ts",
-    "./src/worker-configuration.d.ts", // output of `wrangler types`
   ],
 }
