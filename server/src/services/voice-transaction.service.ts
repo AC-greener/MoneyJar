@@ -7,9 +7,14 @@ import type {
   VoiceTransactionSubmitInput,
   VoiceTransactionSubmitResponse,
 } from "../types/voice-transaction";
+import { VoiceTransactionDraftSchema } from "../types/voice-transaction";
+import { z } from "zod";
 
 const AUTO_COMMIT_CONFIDENCE_THRESHOLD = 0.85;
 const DEFAULT_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const WorkersAiParseResponseSchema = z.object({
+  drafts: z.array(VoiceTransactionDraftSchema).default([]),
+});
 
 const CATEGORY_KEYWORDS: Array<{
   category: string;
@@ -201,8 +206,8 @@ export class VoiceTransactionService {
       throw new Error("Workers AI returned empty response");
     }
 
-    const parsed = JSON.parse(responseText) as { drafts?: VoiceTransactionDraft[] };
-    return (parsed.drafts ?? []).map((draft) => this.normalizeDraft(draft));
+    const parsed = WorkersAiParseResponseSchema.parse(JSON.parse(responseText));
+    return parsed.drafts.map((draft) => this.normalizeDraft(draft));
   }
 
   private parseWithHeuristics(text: string): VoiceTransactionDraft[] {

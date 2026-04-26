@@ -39,6 +39,7 @@ drizzle/                  # 自动生成的迁移文件，禁止手动修改
 | 应用迁移 | `pnpm db:migrate` |
 | 推送 Schema | `pnpm db:push` |
 | 运行测试 | `pnpm test` |
+| 生成覆盖率 | `pnpm test:coverage` |
 
 ## 分层架构（单向依赖）
 
@@ -81,7 +82,9 @@ return c.json({ error: parsed.error.issues }, 400);
 - 使用 Vitest + `@cloudflare/vitest-pool-workers`（真实 Workers 运行时）
 - 测试文件对应源文件：`src/services/x.ts` → `test/unit/x.test.ts`
 - 所有新功能必须包含测试，禁止提交无测试覆盖的代码
-- 完成任务前必须：1. `pnpm typecheck` 2. 相关测试 3. lint/format 检查
+- 完成任务前必须：1. `pnpm typecheck` 2. `pnpm test` 3. 需要评估覆盖率时运行 `pnpm test:coverage` 4. lint/format 检查
+- 覆盖率使用 `@vitest/coverage-istanbul`；`@cloudflare/vitest-pool-workers` 不支持依赖 `node:inspector` 的 V8 coverage provider
+- 集成测试必须复用 `test/helpers/integration.ts` 的 D1 schema 和 seed helper，避免在测试文件中复制建表 SQL
 
 ## OAuth 认证（Google OAuth 2.0）
 

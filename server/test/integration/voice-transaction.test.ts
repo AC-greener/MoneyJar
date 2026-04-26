@@ -1,80 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import {
-  applyD1Migrations,
-  createExecutionContext,
-  env,
-  type D1Migration,
-} from "cloudflare:test";
+import { createExecutionContext } from "cloudflare:test";
 import worker from "../../src/index";
-import { signJwt } from "../../src/services/auth.service";
-
-const CREATE_USERS_TABLE = `CREATE TABLE IF NOT EXISTS "users" (
-  "id" text PRIMARY KEY NOT NULL,
-  "email" text NOT NULL,
-  "name" text,
-  "avatar_url" text,
-  "plan" text NOT NULL DEFAULT 'free',
-  "plan_started_at" text,
-  "plan_expires_at" text,
-  "google_id" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
-)`;
-const CREATE_USERS_EMAIL_UNIQUE = `CREATE UNIQUE INDEX IF NOT EXISTS "users_email_unique" ON "users" ("email")`;
-const CREATE_USERS_GOOGLE_UNIQUE = `CREATE UNIQUE INDEX IF NOT EXISTS "users_google_id_unique" ON "users" ("google_id")`;
-const CREATE_TRANSACTIONS_TABLE = `CREATE TABLE IF NOT EXISTS "transactions" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "user_id" text,
-  "type" text(20) NOT NULL,
-  "amount" real NOT NULL,
-  "category" text(50) NOT NULL,
-  "note" text(256),
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "deleted_at" text
-)`;
-const CREATE_IDX_TRANSACTIONS_USER = `CREATE INDEX IF NOT EXISTS "idx_transactions_user_id" ON "transactions" ("user_id")`;
-const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE IF NOT EXISTS "request_logs" (
-  "id" text PRIMARY KEY,
-  "request_path" text NOT NULL,
-  "request_method" text NOT NULL,
-  "status_code" integer NOT NULL,
-  "duration" integer NOT NULL,
-  "request_body" text,
-  "response_body" text,
-  "error_message" text,
-  "client_ip" text,
-  "user_agent" text,
-  "timestamp" integer NOT NULL,
-  "ai_parsed" integer,
-  "ai_model" text,
-  "ai_processing_time" integer
-)`;
-const CREATE_REFRESH_TOKENS_TABLE = `CREATE TABLE IF NOT EXISTS "refresh_tokens" (
-  "id" text PRIMARY KEY NOT NULL,
-  "user_id" text NOT NULL,
-  "token" text NOT NULL,
-  "expires_at" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "revoked" integer NOT NULL DEFAULT 0,
-  FOREIGN KEY ("user_id") REFERENCES "users"("id")
-)`;
-const CREATE_IDX_REFRESH_TOKEN = `CREATE UNIQUE INDEX IF NOT EXISTS "idx_refresh_token" ON "refresh_tokens" ("token")`;
-const CREATE_FEATURE_FLAGS_TABLE = `CREATE TABLE IF NOT EXISTS "feature_flags" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "feature_key" text NOT NULL,
-  "min_plan" text NOT NULL DEFAULT 'free',
-  "enabled" integer NOT NULL DEFAULT 1,
-  "description" text
-)`;
-const CREATE_IDX_FEATURE_KEY = `CREATE UNIQUE INDEX IF NOT EXISTS "idx_feature_key" ON "feature_flags" ("feature_key")`;
-const CREATE_API_TOKENS_TABLE = `CREATE TABLE IF NOT EXISTS "api_tokens" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "token" text NOT NULL,
-  "name" text NOT NULL,
-  "type" text(10) NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "expires_at" text
-)`;
+import {
+  createBearerToken,
+  seedUser,
+  setupIntegrationDb,
+  workerEnv,
+} from "../helpers/integration";
 
 const TEST_USER_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d099";
 let testToken = "";
@@ -97,27 +29,6 @@ type VoiceSubmitResponse =
       error: string;
     };
 
-async function setupD1() {
-  const migration: D1Migration = {
-    name: "0000_voice_transaction",
-    queries: [
-      CREATE_USERS_TABLE,
-      CREATE_USERS_EMAIL_UNIQUE,
-      CREATE_USERS_GOOGLE_UNIQUE,
-      CREATE_REFRESH_TOKENS_TABLE,
-      CREATE_IDX_REFRESH_TOKEN,
-      CREATE_FEATURE_FLAGS_TABLE,
-      CREATE_IDX_FEATURE_KEY,
-      CREATE_TRANSACTIONS_TABLE,
-      CREATE_IDX_TRANSACTIONS_USER,
-      CREATE_REQUEST_LOGS_TABLE,
-      CREATE_API_TOKENS_TABLE,
-    ],
-  };
-
-  await applyD1Migrations(env.DB, [migration]);
-}
-
 function createJsonRequest(path: string, method: string, body?: unknown) {
   const url = new URL(path, "http://localhost");
   const headers: Record<string, string> = {
@@ -134,18 +45,15 @@ function createJsonRequest(path: string, method: string, body?: unknown) {
 }
 
 beforeAll(async () => {
-  await setupD1();
-  const bindings = env as typeof env & CloudflareBindings;
-  await env.DB.prepare(
-    `INSERT OR IGNORE INTO users (id, email, google_id, plan, name) VALUES (?, ?, ?, 'free', '测试用户')`
-  )
-    .bind(TEST_USER_ID, "voice-test@moneyjar.test", "google-voice-test-001")
-    .run();
+  await setupIntegrationDb("voice-transaction-test-setup");
+  const user = await seedUser({
+    id: TEST_USER_ID,
+    email: "voice-test@moneyjar.test",
+    googleId: "google-voice-test-001",
+    name: "测试用户",
+  });
 
-  testToken = `Bearer ${await signJwt(
-    { sub: TEST_USER_ID, email: "voice-test@moneyjar.test", plan: "free" },
-    bindings.JWT_SECRET
-  )}`;
+  testToken = await createBearerToken(user);
 });
 
 describe("POST /api/transactions/voice/submit", () => {
@@ -158,7 +66,7 @@ describe("POST /api/transactions/voice/submit", () => {
         locale: "zh-CN",
         timezone: "Asia/Shanghai",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -185,7 +93,7 @@ describe("POST /api/transactions/voice/submit", () => {
         text: "午饭50，地铁6",
         source: "voice",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -207,7 +115,7 @@ describe("POST /api/transactions/voice/submit", () => {
         text: "今天买面花了19块",
         source: "manual",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -233,7 +141,7 @@ describe("POST /api/transactions/voice/submit", () => {
         text: "买药花了36元",
         source: "manual",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -258,7 +166,7 @@ describe("POST /api/transactions/voice/submit", () => {
         text: "买菜",
         source: "manual",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -279,7 +187,7 @@ describe("POST /api/transactions/voice/submit", () => {
       createJsonRequest("/api/transactions/voice/submit", "POST", {
         text: "今天天气真不错",
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 
@@ -311,7 +219,7 @@ describe("POST /api/transactions/voice/confirm", () => {
           },
         ],
       }),
-      env,
+      workerEnv({ WORKERS_AI_ENABLED: "false" }),
       ctx
     );
 

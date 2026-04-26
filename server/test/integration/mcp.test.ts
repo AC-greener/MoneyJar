@@ -1,87 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { applyD1Migrations, createExecutionContext, env, type D1Migration } from 'cloudflare:test';
+import { createExecutionContext } from 'cloudflare:test';
 import app from '../../src/index';
-import { signJwt } from '../../src/services/auth.service';
-
-// ─────────────────────────────────────────────
-// Inline 建表 SQL（含完整 Schema，避免在 Workers 运行时读取文件系统）
-// ─────────────────────────────────────────────
-
-const CREATE_USERS_TABLE = `CREATE TABLE "users" (
-  "id" text PRIMARY KEY NOT NULL,
-  "email" text NOT NULL,
-  "name" text,
-  "avatar_url" text,
-  "plan" text NOT NULL DEFAULT 'free',
-  "plan_started_at" text,
-  "plan_expires_at" text,
-  "google_id" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
-)`;
-const CREATE_USERS_EMAIL_UNIQUE = `CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email")`;
-const CREATE_USERS_GOOGLE_UNIQUE = `CREATE UNIQUE INDEX "users_google_id_unique" ON "users" ("google_id")`;
-
-const CREATE_REFRESH_TOKENS_TABLE = `CREATE TABLE "refresh_tokens" (
-  "id" text PRIMARY KEY NOT NULL,
-  "user_id" text NOT NULL,
-  "token" text NOT NULL,
-  "expires_at" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "revoked" integer NOT NULL DEFAULT 0,
-  FOREIGN KEY ("user_id") REFERENCES "users"("id")
-)`;
-const CREATE_IDX_REFRESH_TOKEN = `CREATE UNIQUE INDEX "idx_refresh_token" ON "refresh_tokens" ("token")`;
-
-const CREATE_FEATURE_FLAGS_TABLE = `CREATE TABLE "feature_flags" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "feature_key" text NOT NULL,
-  "min_plan" text NOT NULL DEFAULT 'free',
-  "enabled" integer NOT NULL DEFAULT 1,
-  "description" text
-)`;
-const CREATE_IDX_FEATURE_KEY = `CREATE UNIQUE INDEX "idx_feature_key" ON "feature_flags" ("feature_key")`;
-
-// transactions 表含 user_id 字段，与当前 Schema 保持一致
-const CREATE_TRANSACTIONS_TABLE = `CREATE TABLE "transactions" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "user_id" text,
-  "type" text(20) NOT NULL,
-  "amount" real NOT NULL,
-  "category" text(50) NOT NULL,
-  "note" text(256),
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "deleted_at" text
-)`;
-const CREATE_IDX_TRANSACTIONS_USER = `CREATE INDEX "idx_transactions_user_id" ON "transactions" ("user_id")`;
-
-const CREATE_REQUEST_LOGS_TABLE = `CREATE TABLE "request_logs" (
-  "id" text PRIMARY KEY,
-  "request_path" text NOT NULL,
-  "request_method" text NOT NULL,
-  "status_code" integer NOT NULL,
-  "duration" integer NOT NULL,
-  "request_body" text,
-  "response_body" text,
-  "error_message" text,
-  "client_ip" text,
-  "user_agent" text,
-  "timestamp" integer NOT NULL,
-  "ai_parsed" integer,
-  "ai_model" text,
-  "ai_processing_time" integer
-)`;
-
-const CREATE_API_TOKENS_TABLE = `CREATE TABLE "api_tokens" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "token" text NOT NULL,
-  "name" text NOT NULL,
-  "type" text(10) NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "expires_at" text
-)`;
+import {
+  createBearerToken,
+  seedApiToken,
+  seedUser,
+  setupIntegrationDb,
+  workerEnv,
+} from '../helpers/integration';
 
 // 测试用的 MCP Token（用于 /api/mcp 路由）
 const TEST_MCP_TOKEN = 'test-mcp-token-12345';
@@ -91,30 +19,6 @@ const TEST_USER_ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d003';
 
 // 测试用 JWT，在 beforeAll 中生成后缓存
 let testJwtToken = '';
-
-async function setupD1() {
-  const migration: D1Migration = {
-    name: '0003_add_api_tokens',
-    queries: [
-      CREATE_USERS_TABLE,
-      CREATE_USERS_EMAIL_UNIQUE,
-      CREATE_USERS_GOOGLE_UNIQUE,
-      CREATE_REFRESH_TOKENS_TABLE,
-      CREATE_IDX_REFRESH_TOKEN,
-      CREATE_FEATURE_FLAGS_TABLE,
-      CREATE_IDX_FEATURE_KEY,
-      CREATE_TRANSACTIONS_TABLE,
-      CREATE_IDX_TRANSACTIONS_USER,
-      CREATE_REQUEST_LOGS_TABLE,
-      CREATE_API_TOKENS_TABLE,
-    ],
-  };
-  await applyD1Migrations(env.DB, [migration]);
-}
-
-async function insertTestMcpToken() {
-  await env.DB.exec(`INSERT INTO api_tokens (token, name, type) VALUES ('${TEST_MCP_TOKEN}', 'test-token', 'mcp')`);
-}
 
 function createJsonRpcRequest(body: unknown, token?: string) {
   return new Request('http://localhost/api/mcp', {
@@ -135,7 +39,7 @@ function createAppFetch() {
         ? new Request(input, init)
         : new Request(typeof input === 'string' ? input : input.toString(), init);
 
-    return app.fetch(request, env, createExecutionContext());
+    return app.fetch(request, workerEnv(), createExecutionContext());
   };
 }
 
@@ -172,23 +76,22 @@ async function createTransaction(body: unknown) {
     body: JSON.stringify(body),
   });
 
-  return app.fetch(request, env, createExecutionContext());
+  return app.fetch(request, workerEnv(), createExecutionContext());
 }
 
 beforeAll(async () => {
-  await setupD1();
-  await insertTestMcpToken();
+  await setupIntegrationDb('mcp-test-setup');
+  await seedApiToken({ token: TEST_MCP_TOKEN });
 
-  // 插入测试用户，供 JWT 鉴权使用
-  await env.DB.prepare(
-    `INSERT INTO users (id, email, google_id, plan, name) VALUES (?, ?, ?, 'free', 'MCP 测试用户')`
-  ).bind(TEST_USER_ID, 'mcp-test@moneyjar.test', 'google-mcp-test-001').run();
+  const user = await seedUser({
+    id: TEST_USER_ID,
+    email: 'mcp-test@moneyjar.test',
+    googleId: 'google-mcp-test-001',
+    name: 'MCP 测试用户',
+  });
 
   // 生成测试 JWT 并缓存
-  testJwtToken = await signJwt(
-    { sub: TEST_USER_ID, email: 'mcp-test@moneyjar.test', plan: 'free' },
-    env.JWT_SECRET
-  );
+  testJwtToken = (await createBearerToken(user)).slice('Bearer '.length);
 });
 
 describe('MCP /api/mcp', () => {
@@ -207,7 +110,7 @@ describe('MCP /api/mcp', () => {
           },
         },
       }),
-      env,
+      workerEnv(),
       createExecutionContext()
     );
 

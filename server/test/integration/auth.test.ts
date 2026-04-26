@@ -1,72 +1,18 @@
 import { describe, expect, it, beforeAll } from 'vitest';
-import { createExecutionContext, env, applyD1Migrations, type D1Migration } from 'cloudflare:test';
+import { createExecutionContext } from 'cloudflare:test';
 import worker from '../../src/index';
 import { signJwt } from '../../src/services/auth.service';
-
-/**
- * Token 哈希工具（与 refresh-token.repository.ts 保持一致）
- */
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Inline 建表 SQL
-const CREATE_USERS_TABLE = `CREATE TABLE "users" (
-  "id" text PRIMARY KEY NOT NULL,
-  "email" text NOT NULL,
-  "name" text,
-  "avatar_url" text,
-  "plan" text NOT NULL DEFAULT 'free',
-  "plan_started_at" text,
-  "plan_expires_at" text,
-  "google_id" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
-)`;
-const CREATE_USERS_EMAIL_UNIQUE = `CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email")`;
-const CREATE_USERS_GOOGLE_UNIQUE = `CREATE UNIQUE INDEX "users_google_id_unique" ON "users" ("google_id")`;
-
-const CREATE_REFRESH_TOKENS_TABLE = `CREATE TABLE "refresh_tokens" (
-  "id" text PRIMARY KEY NOT NULL,
-  "user_id" text NOT NULL,
-  "token" text NOT NULL,
-  "expires_at" text NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "revoked" integer NOT NULL DEFAULT 0,
-  FOREIGN KEY ("user_id") REFERENCES "users"("id")
-)`;
-const CREATE_IDX_REFRESH_TOKEN = `CREATE UNIQUE INDEX "idx_refresh_token" ON "refresh_tokens" ("token")`;
-
-const CREATE_API_TOKENS_TABLE = `CREATE TABLE "api_tokens" (
-  "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  "token" text NOT NULL,
-  "name" text NOT NULL,
-  "type" text(10) NOT NULL,
-  "created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "expires_at" text
-)`;
-
-async function setupDB() {
-  const migration: D1Migration = {
-    name: 'auth-test-setup',
-    queries: [
-      CREATE_USERS_TABLE,
-      CREATE_USERS_EMAIL_UNIQUE,
-      CREATE_USERS_GOOGLE_UNIQUE,
-      CREATE_REFRESH_TOKENS_TABLE,
-      CREATE_IDX_REFRESH_TOKEN,
-      CREATE_API_TOKENS_TABLE,
-    ],
-  };
-  await applyD1Migrations(env.DB, [migration]);
-}
+import {
+  hashToken,
+  seedRefreshToken,
+  seedUser,
+  setupIntegrationDb,
+  testEnv,
+  workerEnv,
+} from '../helpers/integration';
 
 beforeAll(async () => {
-  await setupDB();
+  await setupIntegrationDb('auth-test-setup');
 });
 
 describe('POST /api/auth/refresh', () => {
@@ -75,15 +21,10 @@ describe('POST /api/auth/refresh', () => {
     // 注意：refresh_tokens 表存储的是 token 的哈希值
     const userId = crypto.randomUUID();
     const refreshToken = 'test-refresh-token-' + Date.now();
-    const refreshTokenHash = await hashToken(refreshToken);
     const futureExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    await env.DB.prepare(`INSERT INTO users (id, email, google_id, plan) VALUES (?, ?, ?, 'free')`)
-      .bind(userId, `refresh-test-${Date.now()}@test.com`, `google-${Date.now()}`)
-      .run();
-    await env.DB.prepare(`INSERT INTO refresh_tokens (id, user_id, token, expires_at, revoked) VALUES (?, ?, ?, ?, 0)`)
-      .bind(crypto.randomUUID(), userId, refreshTokenHash, futureExpiry)
-      .run();
+    await seedUser({ id: userId, email: `refresh-test-${Date.now()}@test.com` });
+    await seedRefreshToken({ userId, token: refreshToken, expiresAt: futureExpiry });
 
     const ctx = createExecutionContext();
     const res = await worker.fetch(
@@ -92,7 +33,7 @@ describe('POST /api/auth/refresh', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),
       }),
-      env, ctx
+      workerEnv(), ctx
     );
 
     expect(res.status).toBe(200);
@@ -109,7 +50,7 @@ describe('POST /api/auth/refresh', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: 'invalid-token-does-not-exist' }),
       }),
-      env, ctx
+      workerEnv(), ctx
     );
     expect(res.status).toBe(401);
   });
@@ -121,12 +62,8 @@ describe('POST /api/auth/logout', () => {
     const refreshToken = 'test-logout-token-' + Date.now();
     const futureExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    await env.DB.prepare(`INSERT INTO users (id, email, google_id, plan) VALUES (?, ?, ?, 'free')`)
-      .bind(userId, `logout-test-${Date.now()}@test.com`, `google-logout-${Date.now()}`)
-      .run();
-    await env.DB.prepare(`INSERT INTO refresh_tokens (id, user_id, token, expires_at, revoked) VALUES (?, ?, ?, ?, 0)`)
-      .bind(crypto.randomUUID(), userId, refreshToken, futureExpiry)
-      .run();
+    await seedUser({ id: userId, email: `logout-test-${Date.now()}@test.com` });
+    await seedRefreshToken({ userId, token: refreshToken, expiresAt: futureExpiry });
 
     const ctx = createExecutionContext();
     const res = await worker.fetch(
@@ -135,7 +72,7 @@ describe('POST /api/auth/logout', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),
       }),
-      env, ctx
+      workerEnv(), ctx
     );
     expect(res.status).toBe(200);
 
@@ -147,7 +84,7 @@ describe('POST /api/auth/logout', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),
       }),
-      env, ctx2
+      workerEnv(), ctx2
     );
     expect(res2.status).toBe(401);
   });
@@ -157,18 +94,16 @@ describe('GET /api/auth/me', () => {
   it('有效 JWT 应返回用户信息', async () => {
     const userId = crypto.randomUUID();
     const email = `me-test-${Date.now()}@test.com`;
-    await env.DB.prepare(`INSERT INTO users (id, email, google_id, plan, name) VALUES (?, ?, ?, 'free', '测试用户')`)
-      .bind(userId, email, `google-me-${Date.now()}`)
-      .run();
+    await seedUser({ id: userId, email, name: '测试用户' });
 
-    const token = await signJwt({ sub: userId, email, plan: 'free' }, env.JWT_SECRET);
+    const token = await signJwt({ sub: userId, email, plan: 'free' }, testEnv.JWT_SECRET);
 
     const ctx = createExecutionContext();
     const res = await worker.fetch(
       new Request('http://localhost/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       }),
-      env, ctx
+      workerEnv(), ctx
     );
 
     expect(res.status).toBe(200);
@@ -182,7 +117,7 @@ describe('GET /api/auth/me', () => {
     const ctx = createExecutionContext();
     const res = await worker.fetch(
       new Request('http://localhost/api/auth/me'),
-      env, ctx
+      workerEnv(), ctx
     );
     expect(res.status).toBe(401);
   });
@@ -194,9 +129,9 @@ describe('POST /api/auth/test-token', () => {
     const res = await worker.fetch(
       new Request('http://localhost/api/auth/test-token', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${env.TEST_AUTH_TOKEN}` },
+        headers: { Authorization: `Bearer ${testEnv.TEST_AUTH_TOKEN}` },
       }),
-      env, ctx
+      workerEnv(), ctx
     );
 
     expect(res.status).toBe(200);
@@ -211,12 +146,12 @@ describe('POST /api/auth/test-token', () => {
     expect(json.user.email).toBe('staging-test@moneyjar.test');
     expect(json.user.plan).toBe('free');
 
-    const storedUser = await env.DB.prepare(`SELECT id, email FROM users WHERE email = ?`)
+    const storedUser = await testEnv.DB.prepare(`SELECT id, email FROM users WHERE email = ?`)
       .bind('staging-test@moneyjar.test')
       .first<{ id: string; email: string }>();
     expect(storedUser?.id).toBe(json.user.id);
 
-    const storedToken = await env.DB.prepare(`SELECT token, revoked FROM refresh_tokens WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`)
+    const storedToken = await testEnv.DB.prepare(`SELECT token, revoked FROM refresh_tokens WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`)
       .bind(json.user.id)
       .first<{ token: string; revoked: number }>();
     // refresh_tokens 表存储的是 token 的哈希值
@@ -232,19 +167,19 @@ describe('POST /api/auth/test-token', () => {
         method: 'POST',
         headers: { Authorization: 'Bearer wrong-test-auth-token' },
       }),
-      env, ctx
+      workerEnv(), ctx
     );
 
     expect(res.status).toBe(401);
   });
 
   it('production 环境下应返回 404', async () => {
-    const productionEnv = { ...env, ENVIRONMENT: 'production' } as typeof env;
+    const productionEnv = workerEnv({ ENVIRONMENT: 'production' });
     const ctx = createExecutionContext();
     const res = await worker.fetch(
       new Request('http://localhost/api/auth/test-token', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${env.TEST_AUTH_TOKEN}` },
+        headers: { Authorization: `Bearer ${testEnv.TEST_AUTH_TOKEN}` },
       }),
       productionEnv, ctx
     );
@@ -258,7 +193,7 @@ describe('GET /api/dev/token', () => {
     const ctx = createExecutionContext();
     const res = await worker.fetch(
       new Request('http://localhost/api/dev/token?plan=free'),
-      env, ctx
+      workerEnv(), ctx
     );
     expect(res.status).toBe(200);
     const json = await res.json() as { access_token: string };
@@ -269,7 +204,7 @@ describe('GET /api/dev/token', () => {
     const ctx = createExecutionContext();
     const res = await worker.fetch(
       new Request('http://localhost/api/dev/token?plan=pro'),
-      env, ctx
+      workerEnv(), ctx
     );
     expect(res.status).toBe(200);
     const json = await res.json() as { access_token: string };
